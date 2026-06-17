@@ -10,19 +10,22 @@ import { signInWithPopup, signOut, onAuthStateChanged } from "firebase/auth";
 import { collection, doc, onSnapshot, setDoc, deleteDoc, serverTimestamp } from "firebase/firestore";
 
 const platformMap = {
+  hepsiburada:{icon:"HB",color:"#ff6000",category:"Alışveriş"},
+  amazon:{icon:"a",color:"#00a8e1",category:"Alışveriş"},
+  prime:{icon:"P",color:"#00a8e1",category:"Alışveriş"},
   netflix:{icon:"N",color:"#e50914",category:"Film/Dizi"}, spotify:{icon:"♬",color:"#1db954",category:"Müzik"},
   icloud:{icon:"☁",color:"#60a5fa",category:"Bulut"}, youtube:{icon:"▶",color:"#ff0033",category:"Video"},
   disney:{icon:"D+",color:"#113ccf",category:"Film/Dizi"}, adobe:{icon:"A",color:"#fa0f00",category:"Tasarım"},
-  chatgpt:{icon:"AI",color:"#10a37f",category:"Yapay Zeka"}, ps:{icon:"PS",color:"#006fcd",category:"Oyun"},
-  prime:{icon:"P",color:"#00a8e1",category:"Alışveriş"}, google:{icon:"G",color:"#4285f4",category:"Bulut"},
-  apple:{icon:"",color:"#f5f5f7",category:"Apple"}, figma:{icon:"F",color:"#a259ff",category:"Tasarım"}
+  chatgpt:{icon:"AI",color:"#10a37f",category:"Yapay Zeka"}, figma:{icon:"F",color:"#a259ff",category:"Tasarım"},
+  apple:{icon:"",color:"#f5f5f7",category:"Apple"}, google:{icon:"G",color:"#4285f4",category:"Bulut"},
+  playstation:{icon:"PS",color:"#006fcd",category:"Oyun"}, ps:{icon:"PS",color:"#006fcd",category:"Oyun"}
 };
 
 const monthNames = ["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"];
 const emptyForm = { name:"", price:"", currency:"TRY", cycle:"monthly", paymentDay:"", paymentMonth:new Date().getMonth() + 1, category:"Dijital", card:"", color:"#8b5cf6" };
 const rates = { TRY:1, USD:32.5, EUR:35 };
 
-function detectPlatform(name){ const key = Object.keys(platformMap).find(k => name.toLowerCase().includes(k)); return key ? platformMap[key] : null; }
+function detectPlatform(name){ const key = platformKey(name); return key ? platformMap[key] : null; }
 function toTry(price,currency){ return Number(price || 0) * (rates[currency || "TRY"] || 1); }
 function money(v){ return v.toLocaleString("tr-TR",{minimumFractionDigits:2,maximumFractionDigits:2})+" ₺"; }
 function nextPaymentDate(sub){
@@ -43,6 +46,40 @@ function nextPaymentDate(sub){
 function daysUntil(sub){ const today = new Date(); const clean = new Date(today.getFullYear(), today.getMonth(), today.getDate()); return Math.ceil((nextPaymentDate(sub)-clean)/86400000); }
 function formatDate(sub){ return nextPaymentDate(sub).toLocaleDateString("tr-TR",{day:"numeric",month:"long"}); }
 function cycleLabel(cycle){ return cycle === "yearly" ? "Yıllık" : "Aylık"; }
+
+function platformKey(name=""){
+  const text = name.toLowerCase().trim();
+  if(text.includes("hepsiburada")) return "hepsiburada";
+  if(text.includes("amazon") || text.includes("prime")) return "amazon";
+  if(text.includes("apple")) return "apple";
+  if(text.includes("chatgpt") || text.includes("openai")) return "chatgpt";
+  if(text.includes("youtube")) return "youtube";
+  if(text.includes("spotify")) return "spotify";
+  if(text.includes("icloud")) return "icloud";
+  if(text.includes("adobe")) return "adobe";
+  if(text.includes("netflix")) return "netflix";
+  if(text.includes("figma")) return "figma";
+  if(text.includes("playstation") || text === "ps" || text.includes(" ps ")) return "playstation";
+  return Object.keys(platformMap).find(k => text.includes(k)) || null;
+}
+
+function BrandLogo({ sub }){
+  const key = platformKey(sub.name);
+  const fallback = (sub.name || "?").slice(0,2).toUpperCase();
+
+  if(key === "apple") return <span className="brandMark appleMark"></span>;
+  if(key === "chatgpt") return <span className="brandMark chatgptMark">AI</span>;
+  if(key === "amazon") return <span className="brandMark amazonMark">a</span>;
+  if(key === "youtube") return <span className="brandMark youtubeMark">▶</span>;
+  if(key === "adobe") return <span className="brandMark adobeMark">A</span>;
+  if(key === "hepsiburada") return <span className="brandMark hepsiMark">HB</span>;
+  if(key === "spotify") return <span className="brandMark spotifyMark">♬</span>;
+  if(key === "icloud") return <span className="brandMark icloudMark">☁</span>;
+  if(key === "netflix") return <span className="brandMark netflixMark">N</span>;
+  if(key === "figma") return <span className="brandMark figmaMark">F</span>;
+  if(key === "playstation") return <span className="brandMark psMark">PS</span>;
+  return <span className="brandMark">{fallback}</span>;
+}
 
 export default function App(){
   const [user,setUser]=useState(null);
@@ -144,7 +181,7 @@ export default function App(){
 
     <section className="panel glass">
       <div className="title"><div><h2>Yaklaşan ödemeler</h2><p>En yakın yenileme tarihleri</p></div><Bell/></div>
-      <div className="upcomingRow">{upcoming.length ? upcoming.map(s => <article className="upcomingCard" key={s.id}><div className="logo mini" style={{background:s.color,color:s.color==="#f5f5f7"?"#111":"#fff"}}><BrandLogo sub={s} mini /></div><strong>{s.name}</strong><span>{daysUntil(s)} gün</span><small>{formatDate(s)}</small></article>) : <div className="empty">Yaklaşan ödeme yok.</div>}</div>
+      <div className="upcomingRow">{upcoming.length ? upcoming.map(s => <article className="upcomingCard" key={s.id}><div className="logo mini" style={{background:s.color,color:s.color==="#f5f5f7"?"#111":"#fff"}}><BrandLogo sub={s} /></div><strong>{s.name}</strong><span>{daysUntil(s)} gün</span><small>{formatDate(s)}</small></article>) : <div className="empty">Yaklaşan ödeme yok.</div>}</div>
     </section>
 
     {user && <section className="notice glass"><Cloud size={18}/> Yerel verileri buluta taşımak için <button onClick={migrateLocal}>Buluta aktar</button></section>}
