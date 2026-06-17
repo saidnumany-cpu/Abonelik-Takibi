@@ -18,6 +18,21 @@ const platformMap = {
   apple:{icon:"",color:"#f5f5f7",category:"Apple"}, figma:{icon:"F",color:"#a259ff",category:"Tasarım"}
 };
 
+const serviceLogos = {
+  netflix: "https://cdn.simpleicons.org/netflix/FFFFFF",
+  spotify: "https://cdn.simpleicons.org/spotify/FFFFFF",
+  icloud: "https://cdn.simpleicons.org/icloud/FFFFFF",
+  youtube: "https://cdn.simpleicons.org/youtube/FFFFFF",
+  disney: "https://cdn.simpleicons.org/disneyplus/FFFFFF",
+  adobe: "https://cdn.simpleicons.org/adobe/FFFFFF",
+  chatgpt: "https://cdn.simpleicons.org/openai/FFFFFF",
+  ps: "https://cdn.simpleicons.org/playstation/FFFFFF",
+  prime: "https://cdn.simpleicons.org/amazonprime/FFFFFF",
+  google: "https://cdn.simpleicons.org/google/FFFFFF",
+  apple: "https://cdn.simpleicons.org/apple/111111",
+  figma: "https://cdn.simpleicons.org/figma/FFFFFF",
+};
+
 const monthNames = ["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"];
 const emptyForm = { name:"", price:"", currency:"TRY", cycle:"monthly", paymentDay:"", paymentMonth:new Date().getMonth() + 1, category:"Dijital", card:"", color:"#8b5cf6" };
 const rates = { TRY:1, USD:32.5, EUR:35 };
@@ -124,7 +139,11 @@ export default function App(){
     reader.onload=async()=>{ try{ const arr=JSON.parse(reader.result); if(Array.isArray(arr)){ if(user&&db){ for(const s of arr) await setDoc(doc(db,"users",user.uid,"subscriptions",s.id||crypto.randomUUID()), s); } else setSubs(arr); showToast("Yedek içe aktarıldı"); }}catch{ showToast("Yedek okunamadı"); } };
     reader.readAsText(file);
   }
-  function logo(s){ return detectPlatform(s.name)?.icon || s.name.slice(0,2).toUpperCase(); }
+  function logo(s){
+  const key = Object.keys(platformMap).find(k => s.name.toLowerCase().includes(k));
+  return key ? serviceLogos[key] : null;
+}
+function fallbackLogoText(s){ return s.name.slice(0,2).toUpperCase(); }
 
   return <main className="app">
     <div className="aurora a"/><div className="aurora b"/>
@@ -145,7 +164,7 @@ export default function App(){
 
     <section className="panel glass">
       <div className="title"><div><h2>Yaklaşan ödemeler</h2><p>En yakın yenileme tarihleri</p></div><Bell/></div>
-      <div className="upcomingRow">{upcoming.length ? upcoming.map(s => <article className="upcomingCard" key={s.id}><div className="logo mini" style={{background:s.color,color:s.color==="#f5f5f7"?"#111":"#fff"}}>{logo(s)}</div><strong>{s.name}</strong><span>{daysUntil(s)} gün</span><small>{formatDate(s)}</small></article>) : <div className="empty">Yaklaşan ödeme yok.</div>}</div>
+      <div className="upcomingRow">{upcoming.length ? upcoming.map(s => <article className="upcomingCard" key={s.id}><div className="logo mini" style={{background:s.color,color:s.color==="#f5f5f7"?"#111":"#fff"}}>{logo(s) ? <img src={logo(s)} alt={s.name} /> : fallbackLogoText(s)}</div><strong>{s.name}</strong><span>{daysUntil(s)} gün</span><small>{formatDate(s)}</small></article>) : <div className="empty">Yaklaşan ödeme yok.</div>}</div>
     </section>
 
     {user && <section className="notice glass"><Cloud size={18}/> Yerel verileri buluta taşımak için <button onClick={migrateLocal}>Buluta aktar</button></section>}
@@ -170,7 +189,7 @@ export default function App(){
     <section className="panel glass">
       <div className="title split"><div><h2>Abonelikler</h2><p>Arama, filtre, düzenleme ve dışa aktarma</p></div><div className="actions"><button className="ghost" onClick={exportCsv}><Download size={17}/> CSV</button><button className="ghost" onClick={exportJson}><Download size={17}/> JSON</button><label className="ghost upload"><Upload size={17}/> İçe aktar<input type="file" accept="application/json" onChange={importJson}/></label></div></div>
       <div className="toolbar"><label className="search"><Search size={18}/><input placeholder="Ara" value={query} onChange={e=>setQuery(e.target.value)}/></label><label className="select"><ListFilter size={17}/><select value={categoryFilter} onChange={e=>setCategoryFilter(e.target.value)}>{categories.map(c=><option key={c}>{c}</option>)}</select></label><label className="select"><CreditCard size={17}/><select value={cardFilter} onChange={e=>setCardFilter(e.target.value)}>{cards.map(c=><option key={c}>{c}</option>)}</select></label></div>
-      <div className="subs"><AnimatePresence>{filtered.map(s=>{const urgent=daysUntil(s)<=3; return <motion.article className="sub" key={s.id} layout initial={{opacity:0,y:10}} animate={{opacity:1,y:0}} exit={{opacity:0,x:-10}}><div className="logo" style={{background:s.color,color:s.color==="#f5f5f7"?"#111":"#fff"}}>{logo(s)}</div><div><h3>{s.name}</h3><p>{s.category} · {s.card||"Belirtilmedi"}</p></div><span className={urgent?"pill urgent":"pill"}>{urgent&&<AlertTriangle size={14}/>} {daysUntil(s)} gün</span><div className="right"><b>{formatDate(s)}</b><small>Ödeme günü</small></div><div className="right"><b>{s.currency==="TRY"?money(s.price):`${s.price} ${s.currency}`}</b><small>{cycleLabel(s.cycle)}</small></div><div className="rowActions"><button className="iconAction" onClick={()=>startEdit(s)}><Edit3 size={17}/></button><button className="delete" onClick={()=>removeSub(s.id)}><Trash2 size={18}/></button></div></motion.article>})}</AnimatePresence>{!filtered.length&&<div className="empty">Kayıt bulunamadı.</div>}</div>
+      <div className="subs"><AnimatePresence>{filtered.map(s=>{const urgent=daysUntil(s)<=3; return <motion.article className="sub" key={s.id} layout initial={{opacity:0,y:10}} animate={{opacity:1,y:0}} exit={{opacity:0,x:-10}}><div className="logo" style={{background:s.color,color:s.color==="#f5f5f7"?"#111":"#fff"}}>{logo(s) ? <img src={logo(s)} alt={s.name} /> : fallbackLogoText(s)}</div><div><h3>{s.name}</h3><p>{s.category} · {s.card||"Belirtilmedi"}</p></div><span className={urgent?"pill urgent":"pill"}>{urgent&&<AlertTriangle size={14}/>} {daysUntil(s)} gün</span><div className="right"><b>{formatDate(s)}</b><small>Ödeme günü</small></div><div className="right"><b>{s.currency==="TRY"?money(s.price):`${s.price} ${s.currency}`}</b><small>{cycleLabel(s.cycle)}</small></div><div className="rowActions"><button className="iconAction" onClick={()=>startEdit(s)}><Edit3 size={17}/></button><button className="delete" onClick={()=>removeSub(s.id)}><Trash2 size={18}/></button></div></motion.article>})}</AnimatePresence>{!filtered.length&&<div className="empty">Kayıt bulunamadı.</div>}</div>
     </section>
   </main>;
 }
