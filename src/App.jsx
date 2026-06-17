@@ -2,8 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Plus, Trash2, Search, Wallet, Bell, CalendarDays, Download, CreditCard,
-  PieChart, ListFilter, Smartphone, Laptop, AlertTriangle, LogIn, LogOut,
-  Cloud, CloudOff, Upload, Edit3, X, Check
+  PieChart, ListFilter, AlertTriangle, LogIn, LogOut, Cloud, CloudOff,
+  Upload, Edit3, X, Check, User, ChevronRight
 } from "lucide-react";
 import { auth, db, googleProvider, firebaseReady } from "./firebase";
 import { signInWithPopup, signOut, onAuthStateChanged } from "firebase/auth";
@@ -14,27 +14,20 @@ const platformMap = {
   icloud:{icon:"☁",color:"#60a5fa",category:"Bulut"}, youtube:{icon:"▶",color:"#ff0033",category:"Video"},
   disney:{icon:"D+",color:"#113ccf",category:"Film/Dizi"}, adobe:{icon:"A",color:"#fa0f00",category:"Tasarım"},
   chatgpt:{icon:"AI",color:"#10a37f",category:"Yapay Zeka"}, ps:{icon:"PS",color:"#006fcd",category:"Oyun"},
-  prime:{icon:"P",color:"#00a8e1",category:"Alışveriş"}, google:{icon:"G",color:"#4285f4",category:"Bulut"},
+  prime:{icon:"P",color:"#00a8e1",category:"Alışveriş"}, amazon:{icon:"P",color:"#00a8e1",category:"Alışveriş"},
+  hepsiburada:{icon:"hb",color:"#ff6000",category:"Alışveriş"}, google:{icon:"G",color:"#4285f4",category:"Bulut"},
   apple:{icon:"",color:"#f5f5f7",category:"Apple"}, figma:{icon:"F",color:"#a259ff",category:"Tasarım"}
 };
 
 const monthNames = ["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"];
 const emptyForm = {
-  name:"",
-  price:"",
-  currency:"TRY",
-  cycle:"monthly",
-  paymentDay:"",
-  paymentMonth:new Date().getMonth() + 1,
-  category:"Dijital",
-  card:"",
-  color:"#8b5cf6",
-  iconType:"auto",
-  customIcon:""
+  name:"", price:"", currency:"TRY", cycle:"monthly", paymentDay:"",
+  paymentMonth:new Date().getMonth() + 1, category:"Dijital", card:"", color:"#8b5cf6",
+  iconType:"auto", customIcon:""
 };
 const rates = { TRY:1, USD:32.5, EUR:35 };
 
-function detectPlatform(name){ const key = Object.keys(platformMap).find(k => name.toLowerCase().includes(k)); return key ? platformMap[key] : null; }
+function detectPlatform(name=""){ const key = Object.keys(platformMap).find(k => name.toLowerCase().includes(k)); return key ? platformMap[key] : null; }
 function toTry(price,currency){ return Number(price || 0) * (rates[currency || "TRY"] || 1); }
 function money(v){ return v.toLocaleString("tr-TR",{minimumFractionDigits:2,maximumFractionDigits:2})+" ₺"; }
 function nextPaymentDate(sub){
@@ -53,12 +46,22 @@ function nextPaymentDate(sub){
   return date;
 }
 function daysUntil(sub){ const today = new Date(); const clean = new Date(today.getFullYear(), today.getMonth(), today.getDate()); return Math.ceil((nextPaymentDate(sub)-clean)/86400000); }
-function formatDate(sub){ return nextPaymentDate(sub).toLocaleDateString("tr-TR",{day:"numeric",month:"long"}); }
+function formatDate(sub){ return nextPaymentDate(sub).toLocaleDateString("tr-TR",{day:"numeric",month:"long",year:"numeric"}); }
+function shortDate(sub){ return nextPaymentDate(sub).toLocaleDateString("tr-TR",{day:"numeric",month:"long"}); }
 function cycleLabel(cycle){ return cycle === "yearly" ? "Yıllık" : "Aylık"; }
 function isImageIcon(sub){ return sub.iconType === "image" && /^https?:\/\//i.test((sub.customIcon || "").trim()); }
 function iconText(sub){
   if(sub.iconType === "emoji" && (sub.customIcon || "").trim()) return sub.customIcon.trim();
   return detectPlatform(sub.name)?.icon || sub.name.slice(0,2).toUpperCase();
+}
+
+function Logo({ sub, small=false }){
+  const image = isImageIcon(sub);
+  return (
+    <div className={`${small ? "logo smallLogo" : "logo"} ${image ? "imageLogo" : ""}`} style={image ? undefined : {background:sub.color,color:sub.color==="#f5f5f7"?"#111":"#fff"}}>
+      {image ? <img src={sub.customIcon.trim()} alt={sub.name} onError={(e)=>{ e.currentTarget.style.display = "none"; }}/> : <span>{iconText(sub)}</span>}
+    </div>
+  );
 }
 
 export default function App(){
@@ -136,9 +139,11 @@ export default function App(){
   }).sort((a,b)=>daysUntil(a)-daysUntil(b)),[subs,query,categoryFilter,cardFilter]);
   const monthlyTotal=useMemo(()=>subs.reduce((sum,s)=>sum+(s.cycle==="yearly"?toTry(s.price,s.currency)/12:toTry(s.price,s.currency)),0),[subs]);
   const yearlyTotal=monthlyTotal*12;
-  const upcoming=useMemo(()=>[...subs].sort((a,b)=>daysUntil(a)-daysUntil(b)).slice(0,4),[subs]);
+  const upcoming=useMemo(()=>[...subs].sort((a,b)=>daysUntil(a)-daysUntil(b)).slice(0,3),[subs]);
   const categoryTotals=useMemo(()=>{ const map={}; subs.forEach(s=>{ const v=s.cycle==="yearly"?toTry(s.price,s.currency)/12:toTry(s.price,s.currency); map[s.category]=(map[s.category]||0)+v; }); return Object.entries(map).sort((a,b)=>b[1]-a[1]); },[subs]);
   const maxCat=Math.max(...categoryTotals.map(([,v])=>v),1);
+  const dueSoonCount=useMemo(()=>subs.filter(s=>daysUntil(s)<=7).length,[subs]);
+  const thisMonthTotal=useMemo(()=>subs.reduce((sum,s)=>sum+(s.cycle==="yearly"?0:toTry(s.price,s.currency)),0),[subs]);
 
   function exportCsv(){
     const rows=[["Platform","Tutar","Para Birimi","Periyot","Ödeme Günü","Ödeme Ayı","Kategori","Kart","İkon Tipi","İkon"],...subs.map(s=>[s.name,s.price,s.currency,s.cycle,s.paymentDay,s.paymentMonth||"",s.category,s.card,s.iconType||"auto",s.customIcon||""])];
@@ -153,71 +158,107 @@ export default function App(){
     reader.onload=async()=>{ try{ const arr=JSON.parse(reader.result); if(Array.isArray(arr)){ if(user&&db){ for(const s of arr) await setDoc(doc(db,"users",user.uid,"subscriptions",s.id||crypto.randomUUID()), s); } else setSubs(arr); showToast("Yedek içe aktarıldı"); }}catch{ showToast("Yedek okunamadı"); } };
     reader.readAsText(file);
   }
-  function logo(s){ return iconText(s); }
-  function LogoContent({ sub }){
-    if(isImageIcon(sub)) return <img src={sub.customIcon.trim()} alt={sub.name} onError={(e)=>{ e.currentTarget.style.display = "none"; }}/>;
-    return <span>{logo(sub)}</span>;
-  }
 
-  return <main className="app">
-    <div className="aurora a"/><div className="aurora b"/>
+  return <main className="appShell">
+    <div className="ambient ambientOne"/><div className="ambient ambientTwo"/>
     <AnimatePresence>{toast && <motion.div className="toast" initial={{opacity:0,y:-12}} animate={{opacity:1,y:0}} exit={{opacity:0,y:-12}}><Check size={18}/>{toast}</motion.div>}</AnimatePresence>
 
-    <section className="hero compact glass">
-      <div className="heroTop">
-        <div className="brand"><div className="appIcon"><Wallet/></div><h1>Abonelik Takibi</h1></div>
-        <div className="topRight">
-          <span className="badge"><Smartphone size={15}/> iPhone</span><span className="badge"><Laptop size={15}/> Mac</span>
-          {user ? <button className="ghost small" onClick={logout}><LogOut size={17}/> Çıkış</button> : <button className="ghost small" onClick={googleLogin}><LogIn size={17}/> Google ile gir</button>}
-        </div>
+    <header className="topbar">
+      <div className="brandBlock"><div className="brandIcon"><Wallet size={23}/></div><h1>Abonelik Takip</h1></div>
+      <div className="topActions">
+        <span className="syncBadge">{syncState==="cloud"?<Cloud size={17}/>:<CloudOff size={17}/>}<span>{user ? "Senkronize" : "Yerel"}<small>{syncState==="syncing" ? "Aktarılıyor" : syncState==="cloud" ? "Az önce" : "Bu cihaz"}</small></span></span>
+        {user ? <button className="roundGhost" onClick={logout} title="Çıkış"><LogOut size={20}/></button> : <button className="loginButton" onClick={googleLogin}><LogIn size={18}/> Google ile gir</button>}
+        <button className="roundGhost" title="Profil"><User size={20}/></button>
       </div>
-      <div className="syncPill">{syncState==="cloud"?<Cloud size={16}/>:<CloudOff size={16}/>} {user ? "Bulut senkronizasyonu aktif" : "Yerel kullanım"}</div>
+    </header>
+
+    <section className="summaryCard glassPanel">
+      <div className="summaryMetric big"><span>Toplam aylık harcama</span><strong>{money(monthlyTotal)}</strong><small>{subs.length} aktif abonelik</small></div>
+      <div className="summaryMetric"><span>Bu ay ödenecek</span><strong className="blueText">{money(thisMonthTotal || monthlyTotal)}</strong></div>
+      <div className="summaryMetric"><span>Yaklaşan ödemeler</span><strong className="orangeText">{dueSoonCount}</strong><small>7 gün içinde</small></div>
+      <div className="summaryMetric"><span>Yıllık toplam</span><strong className="purpleText">{money(yearlyTotal)}</strong></div>
     </section>
 
-    <section className="metric single featured"><span>Aylık tutar</span><strong>{money(monthlyTotal)}</strong><small>Yıllık karşılığı: {money(yearlyTotal)}</small></section>
+    {user && <section className="notice glassPanel"><Cloud size={18}/> Yerel verileri buluta taşımak için <button onClick={migrateLocal}>Buluta aktar</button></section>}
 
-    <section className="panel glass">
-      <div className="title"><div><h2>Yaklaşan ödemeler</h2><p>En yakın yenileme tarihleri</p></div><Bell/></div>
-      <div className="upcomingRow">{upcoming.length ? upcoming.map(s => <article className="upcomingCard" key={s.id}><div className="logo mini" style={{background:s.color,color:s.color==="#f5f5f7"?"#111":"#fff"}}><LogoContent sub={s}/></div><strong>{s.name}</strong><span>{daysUntil(s)} gün</span><small>{formatDate(s)}</small></article>) : <div className="empty">Yaklaşan ödeme yok.</div>}</div>
-    </section>
-
-    {user && <section className="notice glass"><Cloud size={18}/> Yerel verileri buluta taşımak için <button onClick={migrateLocal}>Buluta aktar</button></section>}
-
-    <section className="panel glass addPanel">
-      <div className="title split"><div><h2>{editingId ? "Aboneliği düzenle" : "Yeni abonelik"}</h2><p>Detayları açmak için + ikonunu kullan.</p></div><button className="roundButton" onClick={() => isFormOpen ? cancelForm() : setIsFormOpen(true)}>{isFormOpen ? <X/> : <Plus/>}</button></div>
-      <AnimatePresence>{isFormOpen && <motion.form className="form" onSubmit={submitSub} initial={{height:0,opacity:0}} animate={{height:"auto",opacity:1}} exit={{height:0,opacity:0}}>
-        <input placeholder="Platform adı" value={form.name} onChange={e=>handleNameChange(e.target.value)}/>
-        <div className="row"><input type="number" step="0.01" placeholder="Tutar" value={form.price} onChange={e=>setForm({...form,price:e.target.value})}/><select value={form.currency} onChange={e=>setForm({...form,currency:e.target.value})}><option>TRY</option><option>USD</option><option>EUR</option></select></div>
-        <div className="row"><select value={form.cycle} onChange={e=>setForm({...form,cycle:e.target.value})}><option value="monthly">Aylık</option><option value="yearly">Yıllık</option></select><input type="number" min="1" max="28" placeholder="Ödeme günü" value={form.paymentDay} onChange={e=>setForm({...form,paymentDay:e.target.value})}/></div>
-        {form.cycle === "yearly" && <select value={form.paymentMonth} onChange={e=>setForm({...form,paymentMonth:e.target.value})}>{monthNames.map((m,i)=><option value={i+1} key={m}>{m}</option>)}</select>}
-        <input placeholder="Kategori" value={form.category} onChange={e=>setForm({...form,category:e.target.value})}/>
-        <input placeholder="Kart / ödeme yöntemi" value={form.card} onChange={e=>setForm({...form,card:e.target.value})}/>
-        <div className="row">
-          <select value={form.iconType} onChange={e=>setForm({...form,iconType:e.target.value,customIcon:e.target.value === "auto" ? "" : form.customIcon})}>
-            <option value="auto">Otomatik ikon</option>
-            <option value="emoji">Emoji</option>
-            <option value="image">Görsel URL</option>
-          </select>
-          {form.iconType === "emoji" ? (
-            <input placeholder="Emoji örn: 🎵" value={form.customIcon} onChange={e=>setForm({...form,customIcon:e.target.value})}/>
-          ) : form.iconType === "image" ? (
-            <input placeholder="Görsel URL https://..." value={form.customIcon} onChange={e=>setForm({...form,customIcon:e.target.value})}/>
-          ) : (
-            <input disabled placeholder="Platform adına göre otomatik" value=""/>
-          )}
+    <section className="mainGrid">
+      <aside className="sideColumn">
+        <div className="sideCard glassPanel">
+          <div className="sectionHead"><h2>Yaklaşan ödemeler</h2><Bell size={19}/></div>
+          <div className="upcomingList">
+            {upcoming.length ? upcoming.map(s => <article className="upcomingItem" key={s.id}>
+              <Logo sub={s} small/>
+              <div><strong>{s.name}</strong><span>{shortDate(s)}</span></div>
+              <b>{s.currency==="TRY"?money(s.price):`${s.price} ${s.currency}`}</b>
+            </article>) : <div className="empty">Yaklaşan ödeme yok.</div>}
+          </div>
+          <button className="fullGhost" onClick={() => setCategoryFilter("Tümü")}>Tümünü görüntüle <ChevronRight size={18}/></button>
         </div>
-        <div className="row"><input type="color" value={form.color} onChange={e=>setForm({...form,color:e.target.value})}/><button>{editingId ? <><Check size={18}/> Güncelle</> : <><Plus size={18}/> Ekle</>}</button></div>
-      </motion.form>}</AnimatePresence>
+
+        <div className="sideCard glassPanel">
+          <div className="sectionHead"><h2>Kategorilere göre dağılım</h2><PieChart size={19}/></div>
+          <div className="categoryList">
+            {categoryTotals.length ? categoryTotals.map(([c,v],i)=><div className="categoryRow" key={c}>
+              <div><span>{c}</span><b>%{monthlyTotal ? Math.round((v/monthlyTotal)*100) : 0}</b></div>
+              <i><motion.em initial={{width:0}} animate={{width:`${v/maxCat*100}%`}}/></i>
+              <small>{money(v)}</small>
+            </div>) : <div className="empty">Kategori verisi yok.</div>}
+          </div>
+        </div>
+      </aside>
+
+      <section className="contentCard glassPanel">
+        <div className="contentHeader">
+          <h2>Aboneliklerim</h2>
+          <label className="searchBox"><Search size={18}/><input placeholder="Ara..." value={query} onChange={e=>setQuery(e.target.value)}/></label>
+          <label className="filterBox"><ListFilter size={16}/><select value={categoryFilter} onChange={e=>setCategoryFilter(e.target.value)}>{categories.map(c=><option key={c}>{c}</option>)}</select></label>
+          <button className="primaryButton" onClick={() => setIsFormOpen(true)}><Plus size={18}/> Abonelik Ekle</button>
+        </div>
+
+        <AnimatePresence>{isFormOpen && <motion.form className="formCard" onSubmit={submitSub} initial={{opacity:0,height:0}} animate={{opacity:1,height:"auto"}} exit={{opacity:0,height:0}}>
+          <div className="formTitle"><h3>{editingId ? "Aboneliği düzenle" : "Yeni abonelik"}</h3><button type="button" className="miniGhost" onClick={cancelForm}><X size={18}/></button></div>
+          <div className="formGrid">
+            <input placeholder="Platform adı" value={form.name} onChange={e=>handleNameChange(e.target.value)}/>
+            <input type="number" step="0.01" placeholder="Tutar" value={form.price} onChange={e=>setForm({...form,price:e.target.value})}/>
+            <select value={form.currency} onChange={e=>setForm({...form,currency:e.target.value})}><option>TRY</option><option>USD</option><option>EUR</option></select>
+            <select value={form.cycle} onChange={e=>setForm({...form,cycle:e.target.value})}><option value="monthly">Aylık</option><option value="yearly">Yıllık</option></select>
+            <input type="number" min="1" max="28" placeholder="Ödeme günü" value={form.paymentDay} onChange={e=>setForm({...form,paymentDay:e.target.value})}/>
+            {form.cycle === "yearly" && <select value={form.paymentMonth} onChange={e=>setForm({...form,paymentMonth:e.target.value})}>{monthNames.map((m,i)=><option value={i+1} key={m}>{m}</option>)}</select>}
+            <input placeholder="Kategori" value={form.category} onChange={e=>setForm({...form,category:e.target.value})}/>
+            <input placeholder="Kart / ödeme yöntemi" value={form.card} onChange={e=>setForm({...form,card:e.target.value})}/>
+            <select value={form.iconType} onChange={e=>setForm({...form,iconType:e.target.value,customIcon:e.target.value==="auto"?"":form.customIcon})}><option value="auto">Otomatik ikon</option><option value="emoji">Emoji</option><option value="image">Görsel URL</option></select>
+            <input placeholder={form.iconType==="emoji" ? "Örn: 🎵" : form.iconType==="image" ? "https://...png" : "Otomatik ikon aktif"} value={form.customIcon} disabled={form.iconType==="auto"} onChange={e=>setForm({...form,customIcon:e.target.value})}/>
+            <input type="color" value={form.color} onChange={e=>setForm({...form,color:e.target.value})}/>
+          </div>
+          <button className="primaryButton submitButton">{editingId ? <><Check size={18}/> Güncelle</> : <><Plus size={18}/> Ekle</>}</button>
+        </motion.form>}</AnimatePresence>
+
+        <div className="tableControls">
+          <label className="filterBox"><CreditCard size={16}/><select value={cardFilter} onChange={e=>setCardFilter(e.target.value)}>{cards.map(c=><option key={c}>{c}</option>)}</select></label>
+          <button className="softButton" onClick={exportCsv}><Download size={17}/> CSV</button>
+          <button className="softButton" onClick={exportJson}><Download size={17}/> JSON</button>
+          <label className="softButton uploadBtn"><Upload size={17}/> İçe aktar<input type="file" accept="application/json" onChange={importJson}/></label>
+        </div>
+
+        <div className="tableHead"><span></span><span></span><span>Süre</span><span>Son ödeme</span><span>Tutar</span><span>Durum</span><span>İşlemler</span></div>
+        <div className="subsTable">
+          <AnimatePresence>{filtered.map(s=>{const urgent=daysUntil(s)<=3; return <motion.article className="subRow" key={s.id} layout initial={{opacity:0,y:10}} animate={{opacity:1,y:0}} exit={{opacity:0,x:-10}}>
+            <Logo sub={s}/>
+            <div className="subName"><strong>{s.name}</strong><span>{s.category}</span></div>
+            <div className="subCell">{daysUntil(s)} gün</div>
+            <div className="subCell">{formatDate(s)}</div>
+            <div className="subPrice"><strong>{s.currency==="TRY"?money(s.price):`${s.price} ${s.currency}`}</strong><span>{cycleLabel(s.cycle)}</span></div>
+            <div><span className={urgent?"status warning":"status"}>{urgent ? "Yakında" : "Aktif"}</span></div>
+            <div className="rowActions"><button className="iconAction" onClick={()=>startEdit(s)}><Edit3 size={17}/></button><button className="delete" onClick={()=>removeSub(s.id)}><Trash2 size={18}/></button></div>
+          </motion.article>})}</AnimatePresence>
+          {!filtered.length&&<div className="empty">Kayıt bulunamadı.</div>}
+        </div>
+      </section>
     </section>
 
-    <section className="panel glass"><div className="title"><div><h2>Takvim görünümü</h2><p>Ayın 1-28 arası ödeme yoğunluğu</p></div><CalendarDays/></div><div className="calendar">{Array.from({length:28},(_,i)=>i+1).map(day=>{const list=subs.filter(s=>Number(s.paymentDay)===day); return <div className={list.length?"day active":"day"} key={day}><span>{day}</span><em>{list.slice(0,4).map(s=><i key={s.id} style={{background:s.color}}/> )}</em></div>})}</div></section>
-
-    <section className="panel glass"><div className="title"><div><h2>Kategoriler</h2><p>Aylık gider kırılımı</p></div><PieChart/></div><div className="bars">{categoryTotals.length ? categoryTotals.map(([c,v])=><div className="bar" key={c}><div><span>{c}</span><strong>{money(v)}</strong></div><i><motion.b initial={{width:0}} animate={{width:`${v/maxCat*100}%`}}/></i></div>) : <div className="empty">Kategori verisi yok.</div>}</div></section>
-
-    <section className="panel glass">
-      <div className="title split"><div><h2>Abonelikler</h2><p>Arama, filtre, düzenleme ve dışa aktarma</p></div><div className="actions"><button className="ghost" onClick={exportCsv}><Download size={17}/> CSV</button><button className="ghost" onClick={exportJson}><Download size={17}/> JSON</button><label className="ghost upload"><Upload size={17}/> İçe aktar<input type="file" accept="application/json" onChange={importJson}/></label></div></div>
-      <div className="toolbar"><label className="search"><Search size={18}/><input placeholder="Ara" value={query} onChange={e=>setQuery(e.target.value)}/></label><label className="select"><ListFilter size={17}/><select value={categoryFilter} onChange={e=>setCategoryFilter(e.target.value)}>{categories.map(c=><option key={c}>{c}</option>)}</select></label><label className="select"><CreditCard size={17}/><select value={cardFilter} onChange={e=>setCardFilter(e.target.value)}>{cards.map(c=><option key={c}>{c}</option>)}</select></label></div>
-      <div className="subs"><AnimatePresence>{filtered.map(s=>{const urgent=daysUntil(s)<=3; return <motion.article className="sub" key={s.id} layout initial={{opacity:0,y:10}} animate={{opacity:1,y:0}} exit={{opacity:0,x:-10}}><div className="logo" style={{background:s.color,color:s.color==="#f5f5f7"?"#111":"#fff"}}><LogoContent sub={s}/></div><div><h3>{s.name}</h3><p>{s.category} · {s.card||"Belirtilmedi"}</p></div><span className={urgent?"pill urgent":"pill"}>{urgent&&<AlertTriangle size={14}/>} {daysUntil(s)} gün</span><div className="right"><b>{formatDate(s)}</b><small>Ödeme günü</small></div><div className="right"><b>{s.currency==="TRY"?money(s.price):`${s.price} ${s.currency}`}</b><small>{cycleLabel(s.cycle)}</small></div><div className="rowActions"><button className="iconAction" onClick={()=>startEdit(s)}><Edit3 size={17}/></button><button className="delete" onClick={()=>removeSub(s.id)}><Trash2 size={18}/></button></div></motion.article>})}</AnimatePresence>{!filtered.length&&<div className="empty">Kayıt bulunamadı.</div>}</div>
+    <section className="calendarCard glassPanel">
+      <div className="sectionHead"><h2>Takvim görünümü</h2><CalendarDays size={19}/></div>
+      <div className="calendarGrid">{Array.from({length:28},(_,i)=>i+1).map(day=>{const list=subs.filter(s=>Number(s.paymentDay)===day); return <div className={list.length?"day active":"day"} key={day}><span>{day}</span><em>{list.slice(0,4).map(s=><i key={s.id} style={{background:s.color}}/> )}</em></div>})}</div>
     </section>
   </main>;
 }
