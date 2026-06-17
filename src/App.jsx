@@ -192,7 +192,7 @@ export default function App(){
               <b>{s.currency==="TRY"?money(s.price):`${s.price} ${s.currency}`}</b>
             </article>) : <div className="empty">Yaklaşan ödeme yok.</div>}
           </div>
-          <button className="fullGhost" onClick={() => setCategoryFilter("Tümü")}>Tümünü görüntüle <ChevronRight size={18}/></button>
+          <button className="fullGhost" onClick={() => { setCategoryFilter("Tümü"); setCardFilter("Tümü"); setQuery(""); document.getElementById("subscriptions-section")?.scrollIntoView({ behavior:"smooth", block:"start" }); }}>Tümünü görüntüle <ChevronRight size={18}/></button>
         </div>
 
         <div className="sideCard glassPanel">
@@ -207,7 +207,7 @@ export default function App(){
         </div>
       </aside>
 
-      <section className="contentCard glassPanel">
+      <section className="contentCard glassPanel" id="subscriptions-section">
         <div className="contentHeader">
           <h2>Aboneliklerim</h2>
           <label className="searchBox"><Search size={18}/><input placeholder="Ara..." value={query} onChange={e=>setQuery(e.target.value)}/></label>
