@@ -6,6 +6,7 @@ import {
   Upload, Edit3, X, Check, User, ChevronRight
 } from "lucide-react";
 import { auth, db, googleProvider, firebaseReady } from "./firebase";
+import { enableNotifications } from "./notifications";
 import { signInWithPopup, signOut, onAuthStateChanged } from "firebase/auth";
 import { collection, doc, onSnapshot, setDoc, deleteDoc, serverTimestamp } from "firebase/firestore";
 
@@ -167,7 +168,22 @@ export default function App(){
       <div className="brandBlock"><div className="brandIcon"><Wallet size={23}/></div><h1>Abonelik Takip</h1></div>
       <div className="topActions">
         <span className="syncBadge">{syncState==="cloud"?<Cloud size={17}/>:<CloudOff size={17}/>}<span>{user ? "Senkronize" : "Yerel"}<small>{syncState==="syncing" ? "Aktarılıyor" : syncState==="cloud" ? "Az önce" : "Bu cihaz"}</small></span></span>
-        {user ? <button className="roundGhost" onClick={logout} title="Çıkış"><LogOut size={20}/></button> : <button className="loginButton" onClick={googleLogin}><LogIn size={18}/> Google ile gir</button>}
+
+        {user ? (
+          <>
+            <button className="roundGhost" onClick={() => enableNotifications(user)} title="Bildirimleri Aç">
+              <Bell size={20}/>
+            </button>
+            <button className="roundGhost" onClick={logout} title="Çıkış">
+              <LogOut size={20}/>
+            </button>
+          </>
+        ) : (
+          <button className="loginButton" onClick={googleLogin}>
+            <LogIn size={18}/> Google ile gir
+          </button>
+        )}
+
         <button className="roundGhost" title="Profil"><User size={20}/></button>
       </div>
     </header>
