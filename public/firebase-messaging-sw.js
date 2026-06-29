@@ -7,15 +7,22 @@ firebase.initializeApp({
   projectId: "abonelik-takibi-9a7f9",
   storageBucket: "abonelik-takibi-9a7f9.firebasestorage.app",
   messagingSenderId: "608678371695",
-  appId: "1:608678371695:web:24cc69caead0579f28889a",
+  appId: "1:608678371695:web:24cc69caead0579f28889a"
 });
 
-const messaging = firebase.messaging();
+try {
+  const messaging = firebase.messaging();
 
-messaging.onBackgroundMessage((payload) => {
-  self.registration.showNotification(payload.notification.title, {
-    body: payload.notification.body,
-    icon: "/icon-192.png",
-    badge: "/icon-192.png",
+  messaging.onBackgroundMessage((payload) => {
+    const title = payload?.notification?.title || "Abonelik Takip";
+    const body = payload?.notification?.body || "Yeni bildirimin var.";
+
+    self.registration.showNotification(title, {
+      body,
+      icon: "/icon-192.png",
+      badge: "/icon-192.png"
+    });
   });
-});
+} catch (error) {
+  console.error("Firebase Messaging Service Worker hatası:", error);
+}
