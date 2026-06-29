@@ -1,6 +1,8 @@
-import { getToken } from "firebase/messaging";
+import { getToken, onMessage } from "firebase/messaging";
 import { doc, setDoc } from "firebase/firestore";
 import { db, getFirebaseMessaging } from "./firebase";
+
+let foregroundListenerStarted = false;
 
 export async function enableNotifications(user) {
   try {
@@ -57,9 +59,46 @@ export async function enableNotifications(user) {
       { merge: true }
     );
 
+    startForegroundNotifications();
+
     alert("Bildirimler açıldı ve cihaz Firebase'e kaydedildi.");
   } catch (error) {
     console.error("Bildirim açma hatası:", error);
     alert("Bildirim açılırken hata oluştu: " + error.message);
+  }
+}
+
+export async function startForegroundNotifications() {
+  try {
+    if (foregroundListenerStarted) return;
+
+    if (!("Notification" in window)) return;
+    if (Notification.permission !== "granted") return;
+
+    const messaging = await getFirebaseMessaging();
+
+    if (!messaging) return;
+
+    foregroundListenerStarted = true;
+
+    onMessage(messaging, (payload) => {
+      const title =
+        payload?.notification?.title ||
+        payload?.data?.title ||
+        "Abonelik Takip";
+
+      const body =
+        payload?.notification?.body ||
+        payload?.data?.body ||
+        "Yeni bildirimin var.";
+
+      new Notification(title, {
+        body,
+        icon: "/icon-192.png",
+        badge: "/icon-192.png",
+      });
+    });
+  } catch (error) {
+    console.error("Ön plan bildirim dinleyici hatası:", error);
   }
 }
