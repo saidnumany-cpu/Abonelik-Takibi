@@ -6,7 +6,7 @@ import {
   Upload, Edit3, X, Check, User, ChevronRight
 } from "lucide-react";
 import { auth, db, googleProvider, firebaseReady } from "./firebase";
-import { enableNotifications } from "./notifications";
+import { enableNotifications, startForegroundNotifications } from "./notifications";
 import { signInWithPopup, signOut, onAuthStateChanged } from "firebase/auth";
 import { collection, doc, onSnapshot, setDoc, deleteDoc, serverTimestamp } from "firebase/firestore";
 
@@ -78,6 +78,11 @@ export default function App(){
   const [toast,setToast]=useState("");
 
   useEffect(() => { if(!firebaseReady) return; return onAuthStateChanged(auth, current => setUser(current)); }, []);
+
+  useEffect(() => {
+    startForegroundNotifications();
+  }, []);
+
   useEffect(() => { if(!user || !db) localStorage.setItem("abonelik-takip-local", JSON.stringify(subs)); }, [subs,user]);
   useEffect(() => {
     if(!user || !db) return;
