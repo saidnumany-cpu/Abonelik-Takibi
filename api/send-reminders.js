@@ -1,12 +1,16 @@
-const admin = require("firebase-admin");
+const { initializeApp, getApps, cert } = require("firebase-admin/app");
+const { getFirestore, FieldValue } = require("firebase-admin/firestore");
+const { getMessaging } = require("firebase-admin/messaging");
 
 function initFirebaseAdmin() {
-  if (admin.apps.length) return;
+  if (getApps().length > 0) return;
 
-  const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n");
+  const privateKey = process.env.FIREBASE_PRIVATE_KEY
+    ? process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, "\n")
+    : undefined;
 
-  admin.initializeApp({
-    credential: admin.credential.cert({
+  initializeApp({
+    credential: cert({
       projectId: process.env.FIREBASE_PROJECT_ID,
       clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
       privateKey,
@@ -33,16 +37,22 @@ function getTurkeyToday() {
 }
 
 function daysUntilPayment(subscription, today) {
-  const paymentDay = Math.min(Math.max(Number(subscription.paymentDay || 1), 1), 28);
-  const cycle = subscription.cycle || "monthly";
+  const paymentDay = Math.min(
+    Math.max(Number(subscription.paymentDay || 1), 1),
+    28
+  );
 
+  const cycle = subscription.cycle || "monthly";
   const todayDate = Date.UTC(today.year, today.month - 1, today.day);
 
   let paymentYear = today.year;
   let paymentMonth = today.month;
 
   if (cycle === "yearly") {
-    paymentMonth = Math.min(Math.max(Number(subscription.paymentMonth || 1), 1), 12);
+    paymentMonth = Math.min(
+      Math.max(Number(subscription.paymentMonth || 1), 1),
+      12
+    );
   }
 
   let paymentDate = Date.UTC(paymentYear, paymentMonth - 1, paymentDay);
@@ -53,6 +63,7 @@ function daysUntilPayment(subscription, today) {
     } else {
       const nextMonth = paymentMonth === 12 ? 1 : paymentMonth + 1;
       const nextYear = paymentMonth === 12 ? paymentYear + 1 : paymentYear;
+
       paymentDate = Date.UTC(nextYear, nextMonth - 1, paymentDay);
     }
   }
@@ -64,7 +75,9 @@ function formatPrice(subscription) {
   const price = Number(subscription.price || 0);
   const currency = subscription.currency || "TRY";
 
-  if (currency === "TRY") return `${price.toLocaleString("tr-TR")} TL`;
+  if (currency === "TRY") {
+    return `${price.toLocaleString("tr-TR")} TL`;
+  }
 
   return `${price.toLocaleString("tr-TR")} ${currency}`;
 }
@@ -73,8 +86,8 @@ module.exports = async function handler(req, res) {
   try {
     initFirebaseAdmin();
 
-    const db = admin.firestore();
-    const messaging = admin.messaging();
+    const db = getFirestore();
+    const messaging = getMessaging();
     const today = getTurkeyToday();
 
     const usersSnapshot = await db.collection("users").get();
@@ -130,7 +143,9 @@ module.exports = async function handler(req, res) {
 
       if (dueSubscriptions.length === 1) {
         title = first.daysLeft === 0 ? "Bugün ödeme var" : "Yarın ödeme var";
-        body = `${first.name} için ${formatPrice(first)} ödeme ${first.daysLeft === 0 ? "bugün" : "yarın"}.`;
+        body = `${first.name} için ${formatPrice(first)} ödeme ${
+          first.daysLeft === 0 ? "bugün" : "yarın"
+        }.`;
       } else {
         title = "Yaklaşan abonelik ödemeleri";
         body = `${dueSubscriptions.length} abonelik için bugün veya yarın ödeme var.`;
@@ -155,7 +170,7 @@ module.exports = async function handler(req, res) {
       await userDoc.ref.set(
         {
           lastReminderDate: today.key,
-          lastReminderAt: admin.firestore.FieldValue.serverTimestamp(),
+          lastReminderAt: FieldValue.serverTimestamp(),
         },
         { merge: true }
       );
