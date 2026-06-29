@@ -1,4 +1,4 @@
-self.addEventListener("install", () => {
+self.addEventListener("install", (event) => {
   self.skipWaiting();
 });
 
@@ -6,27 +6,43 @@ self.addEventListener("activate", (event) => {
   event.waitUntil(self.clients.claim());
 });
 
-importScripts("https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js");
-importScripts("https://www.gstatic.com/firebasejs/10.12.5/firebase-messaging-compat.js");
+self.addEventListener("push", (event) => {
+  let data = {};
 
-firebase.initializeApp({
-  apiKey: "AIzaSyCWej3bGdeTX-m1zW2sa_gtWkWWJLjt_Os",
-  authDomain: "abonelik-takibi-9a7f9.firebaseapp.com",
-  projectId: "abonelik-takibi-9a7f9",
-  storageBucket: "abonelik-takibi-9a7f9.firebasestorage.app",
-  messagingSenderId: "608678371695",
-  appId: "1:608678371695:web:24cc69caead0579f28889a"
-});
+  try {
+    data = event.data ? event.data.json() : {};
+  } catch (error) {
+    data = {};
+  }
 
-const messaging = firebase.messaging();
+  const title =
+    data?.notification?.title ||
+    data?.title ||
+    "Abonelik Takip";
 
-messaging.onBackgroundMessage((payload) => {
-  const title = payload?.notification?.title || "Abonelik Takip";
-  const body = payload?.notification?.body || "Yeni bildirimin var.";
+  const body =
+    data?.notification?.body ||
+    data?.body ||
+    "Yeni bildirimin var.";
 
-  self.registration.showNotification(title, {
+  const options = {
     body,
     icon: "/icon-192.png",
-    badge: "/icon-192.png"
-  });
+    badge: "/icon-192.png",
+    data: {
+      url: "/"
+    }
+  };
+
+  event.waitUntil(
+    self.registration.showNotification(title, options)
+  );
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+
+  event.waitUntil(
+    self.clients.openWindow("/")
+  );
 });
