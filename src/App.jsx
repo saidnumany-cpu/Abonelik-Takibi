@@ -77,13 +77,30 @@ export default function App(){
   const [editingId,setEditingId]=useState(null);
   const [toast,setToast]=useState("");
 
-  useEffect(() => { if(!firebaseReady) return; return onAuthStateChanged(auth, current => setUser(current)); }, []);
+  useEffect(() => {
+    if(!firebaseReady) return;
+    return onAuthStateChanged(auth, current => setUser(current));
+  }, []);
 
   useEffect(() => {
     startForegroundNotifications();
   }, []);
 
+  useEffect(() => {
+    if(!user) return;
+    if(!("Notification" in window)) return;
+    if(Notification.permission !== "granted") return;
+
+    const lastAutoRefresh = sessionStorage.getItem("notification-token-refreshed");
+
+    if(lastAutoRefresh === user.uid) return;
+
+    sessionStorage.setItem("notification-token-refreshed", user.uid);
+    enableNotifications(user);
+  }, [user]);
+
   useEffect(() => { if(!user || !db) localStorage.setItem("abonelik-takip-local", JSON.stringify(subs)); }, [subs,user]);
+
   useEffect(() => {
     if(!user || !db) return;
     setSyncState("syncing");
