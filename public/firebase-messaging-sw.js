@@ -11,38 +11,54 @@ self.addEventListener("push", (event) => {
 
   try {
     data = event.data ? event.data.json() : {};
-  } catch (error) {
+  } catch {
     data = {};
   }
 
+  const notification = data.notification || {};
+  const customData = data.data || {};
+
   const title =
-    data?.notification?.title ||
-    data?.title ||
+    notification.title ||
+    customData.title ||
+    data.title ||
     "Abonelik Takip";
 
   const body =
-    data?.notification?.body ||
-    data?.body ||
+    notification.body ||
+    customData.body ||
+    data.body ||
     "Yeni bildirimin var.";
 
-  const options = {
-    body,
-    icon: "/icon-192.png",
-    badge: "/icon-192.png",
-    data: {
-      url: "/"
-    }
-  };
-
   event.waitUntil(
-    self.registration.showNotification(title, options)
+    self.registration.showNotification(title, {
+      body,
+      icon: "/icon-192.png",
+      badge: "/icon-192.png",
+      tag: "abonelik-takip-reminder",
+      renotify: true,
+      requireInteraction: true,
+      data: {
+        url: customData.url || "/",
+      },
+    })
   );
 });
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
 
+  const targetUrl = event.notification.data?.url || "/";
+
   event.waitUntil(
-    self.clients.openWindow("/")
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientsArr) => {
+      for (const client of clientsArr) {
+        if ("focus" in client) return client.focus();
+      }
+
+      if (self.clients.openWindow) {
+        return self.clients.openWindow(targetUrl);
+      }
+    })
   );
 });
