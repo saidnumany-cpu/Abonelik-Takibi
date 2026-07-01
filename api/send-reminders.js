@@ -95,13 +95,15 @@ module.exports = async function handler(req, res) {
     let checkedUsers = 0;
     let sentCount = 0;
     let skippedCount = 0;
+    let failedCount = 0;
+    let deletedTokenCount = 0;
 
     for (const userDoc of usersSnapshot.docs) {
       checkedUsers += 1;
 
       const user = userDoc.data();
 
-      if (!user.notificationToken || user.notificationsEnabled !== true) {
+      if (user.notificationsEnabled !== true) {
         skippedCount += 1;
         continue;
       }
@@ -136,6 +138,32 @@ module.exports = async function handler(req, res) {
         continue;
       }
 
+      const tokensSnapshot = await db
+        .collection("users")
+        .doc(userDoc.id)
+        .collection("notificationTokens")
+        .where("enabled", "==", true)
+        .get();
+
+      const tokens = [];
+
+      tokensSnapshot.forEach((tokenDoc) => {
+        const data = tokenDoc.data();
+
+        if (data.token) {
+          tokens.push({
+            id: tokenDoc.id,
+            ref: tokenDoc.ref,
+            token: data.token,
+          });
+        }
+      });
+
+      if (!tokens.length) {
+        skippedCount += 1;
+        continue;
+      }
+
       const first = dueSubscriptions[0];
 
       let title = "Abonelik hatırlatması";
@@ -151,31 +179,78 @@ module.exports = async function handler(req, res) {
         body = `${dueSubscriptions.length} abonelik için bugün veya yarın ödeme var.`;
       }
 
-      await messaging.send({
-        token: user.notificationToken,
-        notification: {
-          title,
-          body,
-        },
-        webpush: {
-          notification: {
-            title,
-            body,
-            icon: "/icon-192.png",
-            badge: "/icon-192.png",
-          },
-        },
-      });
-
-      await userDoc.ref.set(
-        {
-          lastReminderDate: today.key,
-          lastReminderAt: FieldValue.serverTimestamp(),
-        },
-        { merge: true }
+      const results = await Promise.allSettled(
+        tokens.map((item) =>
+          messaging.send({
+            token: item.token,
+            notification: {
+              title,
+              body,
+            },
+            data: {
+              title,
+              body,
+              url: "/",
+            },
+            webpush: {
+              notification: {
+                title,
+                body,
+                icon: "/icon-192.png",
+                badge: "/icon-192.png",
+                tag: "abonelik-takip-reminder",
+                renotify: "true",
+                requireInteraction: "true",
+              },
+              fcmOptions: {
+                link: "https://abonelik-takibi.vercel.app",
+              },
+            },
+          })
+        )
       );
 
-      sentCount += 1;
+      let userSentCount = 0;
+
+      for (let i = 0; i < results.length; i++) {
+        const result = results[i];
+        const tokenItem = tokens[i];
+
+        if (result.status === "fulfilled") {
+          userSentCount += 1;
+          sentCount += 1;
+          continue;
+        }
+
+        failedCount += 1;
+
+        const errorCode = result.reason?.errorInfo?.code || result.reason?.code;
+
+        if (
+          errorCode === "messaging/registration-token-not-registered" ||
+          errorCode === "messaging/invalid-registration-token"
+        ) {
+          await tokenItem.ref.delete();
+          deletedTokenCount += 1;
+        }
+
+        console.error("Bildirim gönderilemedi:", {
+          userId: userDoc.id,
+          tokenDocId: tokenItem.id,
+          errorCode,
+          message: result.reason?.message,
+        });
+      }
+
+      if (userSentCount > 0) {
+        await userDoc.ref.set(
+          {
+            lastReminderDate: today.key,
+            lastReminderAt: FieldValue.serverTimestamp(),
+          },
+          { merge: true }
+        );
+      }
     }
 
     return res.status(200).json({
@@ -184,6 +259,8 @@ module.exports = async function handler(req, res) {
       checkedUsers,
       sentCount,
       skippedCount,
+      failedCount,
+      deletedTokenCount,
     });
   } catch (error) {
     console.error("send-reminders error:", error);
