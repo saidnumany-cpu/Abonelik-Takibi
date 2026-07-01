@@ -1,8 +1,20 @@
 import { getToken, onMessage } from "firebase/messaging";
-import { doc, setDoc } from "firebase/firestore";
+import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { db, getFirebaseMessaging } from "./firebase";
 
 let foregroundListenerStarted = false;
+
+function getDeviceId() {
+  const key = "abonelik-device-id";
+  let deviceId = localStorage.getItem(key);
+
+  if (!deviceId) {
+    deviceId = crypto.randomUUID();
+    localStorage.setItem(key, deviceId);
+  }
+
+  return deviceId;
+}
 
 export async function enableNotifications(user) {
   try {
@@ -47,21 +59,34 @@ export async function enableNotifications(user) {
       return;
     }
 
+    const deviceId = getDeviceId();
+
     await setDoc(
       doc(db, "users", user.uid),
       {
         email: user.email || "",
         displayName: user.displayName || "",
-        notificationToken: token,
         notificationsEnabled: true,
         updatedAt: new Date().toISOString(),
       },
       { merge: true }
     );
 
+    await setDoc(
+      doc(db, "users", user.uid, "notificationTokens", deviceId),
+      {
+        token,
+        deviceId,
+        userAgent: navigator.userAgent,
+        enabled: true,
+        updatedAt: serverTimestamp(),
+      },
+      { merge: true }
+    );
+
     startForegroundNotifications();
 
-    alert("Bildirimler açıldı ve cihaz Firebase'e kaydedildi.");
+    alert("Bildirimler açıldı ve bu cihaz Firebase'e kaydedildi.");
   } catch (error) {
     console.error("Bildirim açma hatası:", error);
     alert("Bildirim açılırken hata oluştu: " + error.message);
