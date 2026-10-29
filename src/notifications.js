@@ -19,32 +19,27 @@ function getDeviceId() {
 export async function enableNotifications(user) {
   try {
     if (!user) {
-      alert("Bildirim açmak için önce Google ile giriş yapmalısın.");
-      return;
+      return { ok: false, message: "Bildirim açmak için önce Google ile giriş yapmalısın." };
     }
 
     if (!db) {
-      alert("Firebase veritabanı bağlantısı bulunamadı.");
-      return;
+      return { ok: false, message: "Firebase veritabanı bağlantısı bulunamadı." };
     }
 
     if (!("Notification" in window)) {
-      alert("Bu tarayıcı bildirim desteklemiyor.");
-      return;
+      return { ok: false, message: "Bu tarayıcı bildirim desteklemiyor." };
     }
 
     const permission = await Notification.requestPermission();
 
     if (permission !== "granted") {
-      alert("Bildirim izni verilmedi.");
-      return;
+      return { ok: false, message: "Bildirim izni verilmedi." };
     }
 
     const messaging = await getFirebaseMessaging();
 
     if (!messaging) {
-      alert("Bu cihazda bildirim desteklenmiyor.");
-      return;
+      return { ok: false, message: "Bu cihazda bildirim desteklenmiyor." };
     }
 
     const registration = await navigator.serviceWorker.register("/firebase-messaging-sw.js");
@@ -55,8 +50,7 @@ export async function enableNotifications(user) {
     });
 
     if (!token) {
-      alert("Bildirim token'ı alınamadı.");
-      return;
+      return { ok: false, message: "Bildirim token'ı alınamadı." };
     }
 
     const deviceId = getDeviceId();
@@ -86,10 +80,10 @@ export async function enableNotifications(user) {
 
     startForegroundNotifications();
 
-    alert("Bildirimler açıldı ve bu cihaz Firebase'e kaydedildi.");
+    return { ok: true, message: "Bildirimler bu cihaz için açıldı." };
   } catch (error) {
     console.error("Bildirim açma hatası:", error);
-    alert("Bildirim açılırken hata oluştu: " + error.message);
+    return { ok: false, message: "Bildirim açılamadı: " + error.message };
   }
 }
 

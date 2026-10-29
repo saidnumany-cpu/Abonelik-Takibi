@@ -3,8 +3,8 @@
   "short_name": "Abonelik",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#05050a",
-  "theme_color": "#05050a",
+  "background_color": "#0b1120",
+  "theme_color": "#0b1120",
   "orientation": "portrait",
   "icons": [
     {
