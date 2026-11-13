@@ -229,7 +229,7 @@ export default function App(){
     <AnimatePresence>{toast && <motion.div className="toast" initial={{opacity:0,y:-12}} animate={{opacity:1,y:0}} exit={{opacity:0,y:-12}}><Check size={18}/>{toast}</motion.div>}</AnimatePresence>
 
     <header className="topbar">
-      <div className="brandBlock"><img className="brandIcon" src="/icon.svg" alt="" width="38" height="38"/><h1>Abonelik Takip</h1></div>
+      <div className="brandBlock"><span className="brandMark"><img src="/icon.svg" alt="" width="46" height="46"/></span><div className="brandText"><h1>Abonelik Takip</h1><span>Ödemelerin tek bakışta</span></div></div>
       <div className="topActions">
         <span className="syncBadge">{syncState==="cloud"?<Cloud size={17}/>:<CloudOff size={17}/>}<span>{user ? "Senkronize" : "Yerel"}<small>{syncState==="syncing" ? "Aktarılıyor" : syncState==="cloud" ? "Az önce" : "Bu cihaz"}</small></span></span>
 
