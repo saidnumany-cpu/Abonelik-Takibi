@@ -5,14 +5,14 @@
     "preview": "vite preview --host 0.0.0.0"
   },
   "dependencies": {
-    "@vitejs/plugin-react": "latest",
-    "vite": "latest",
-    "react": "latest",
-    "react-dom": "latest",
-    "firebase": "latest",
-    "firebase-admin": "latest",
-    "lucide-react": "latest",
-    "framer-motion": "latest"
+    "@vitejs/plugin-react": "^6.0.2",
+    "vite": "^8.0.16",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "firebase": "^12.14.0",
+    "firebase-admin": "^14.5.1",
+    "lucide-react": "^1.18.0",
+    "framer-motion": "^12.40.0"
   },
   "devDependencies": {}
 }

@@ -35,4 +35,13 @@ git push -u origin main
 ## Vercel
 
 Project Settings > Environment Variables kısmına `.env` değerlerini ekle.
+
+Ayrıca güvenlik için `CRON_SECRET` adında rastgele uzun bir değer ekle (ör. `openssl rand -hex 32`).
+Vercel Cron bu değeri hatırlatma isteğine otomatik ekler; böylece `/api/send-reminders`
+adresini başkası çağıramaz. `/api/test-notification` da sadece bu değerle çalışır:
+
+```bash
+curl -H "Authorization: Bearer CRON_SECRET_DEGERI" https://abonelik-takibi.vercel.app/api/test-notification
+```
+
 Sonra Deploy.

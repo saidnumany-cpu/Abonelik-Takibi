@@ -83,6 +83,12 @@ function formatPrice(subscription) {
 }
 
 module.exports = async function handler(req, res) {
+  // Vercel'de CRON_SECRET tanımlıysa, Vercel Cron isteklere otomatik
+  // "Authorization: Bearer <CRON_SECRET>" ekler. Başkası URL'yi çağıramaz.
+  if (process.env.CRON_SECRET && req.headers.authorization !== `Bearer ${process.env.CRON_SECRET}`) {
+    return res.status(401).json({ ok: false, error: "Yetkisiz" });
+  }
+
   try {
     initFirebaseAdmin();
 
@@ -197,7 +203,7 @@ module.exports = async function handler(req, res) {
                 title,
                 body,
                 icon: "/icon-192.png",
-                badge: "/icon-192.png",
+                badge: "/badge-96.png",
                 tag: "abonelik-takip-reminder",
                 renotify: "true",
                 requireInteraction: "true",
