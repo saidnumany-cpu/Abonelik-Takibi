@@ -253,3 +253,27 @@ img.brandIcon{display:block;width:38px;height:38px;border-radius:9px;background:
   .subsTable{padding:12px 30px}
   .subRow{grid-template-columns:48px auto minmax(0,1fr) auto;border:1px solid var(--line2);background:rgba(255,255,255,.028)}
 }
+
+/* ---------- iPhone çentik / durum çubuğu ----------
+   Ana ekrandan açılınca sayfa durum çubuğunun altına uzanıyor (viewport-fit=cover).
+   İçerik saat ve pilin altından başlasın, kaydırınca da durum çubuğu okunaklı kalsın. */
+.appShell{
+  padding-top:calc(22px + env(safe-area-inset-top));
+  padding-left:calc(42px + env(safe-area-inset-left));
+  padding-right:calc(42px + env(safe-area-inset-right));
+  padding-bottom:calc(34px + env(safe-area-inset-bottom));
+}
+body::before{
+  content:"";position:fixed;z-index:60;top:0;left:0;right:0;
+  height:env(safe-area-inset-top);
+  background:rgba(5,6,12,.82);
+  backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
+  pointer-events:none;
+}
+.toast{top:calc(18px + env(safe-area-inset-top))}
+@media(max-width:1180px){
+  .appShell{padding:calc(18px + env(safe-area-inset-top)) calc(18px + env(safe-area-inset-right)) calc(18px + env(safe-area-inset-bottom)) calc(18px + env(safe-area-inset-left))}
+}
+@media(max-width:760px){
+  .appShell{padding:calc(12px + env(safe-area-inset-top)) calc(12px + env(safe-area-inset-right)) calc(24px + env(safe-area-inset-bottom)) calc(12px + env(safe-area-inset-left))}
+}
