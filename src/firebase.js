@@ -1,7 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
-import { getMessaging, isSupported } from "firebase/messaging";
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -22,6 +21,8 @@ export const googleProvider = new GoogleAuthProvider();
 export const getFirebaseMessaging = async () => {
   if (!firebaseReady) return null;
 
+  // firebase/messaging sadece gerektiğinde yüklenir
+  const { getMessaging, isSupported } = await import("firebase/messaging");
   const supported = await isSupported();
 
   if (!supported) return null;

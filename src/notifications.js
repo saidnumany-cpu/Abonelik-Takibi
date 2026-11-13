@@ -16,38 +16,45 @@ function getDeviceId() {
   return deviceId;
 }
 
-export async function enableNotifications(user) {
+// silent: true → arka planda token yenilerken uyarı penceresi gösterme
+export async function enableNotifications(user, { silent = false } = {}) {
+  const notify = (message) => {
+    if (!silent) alert(message);
+  };
+
   try {
     if (!user) {
-      alert("Bildirim açmak için önce Google ile giriş yapmalısın.");
+      notify("Bildirim açmak için önce Google ile giriş yapmalısın.");
       return;
     }
 
     if (!db) {
-      alert("Firebase veritabanı bağlantısı bulunamadı.");
+      notify("Firebase veritabanı bağlantısı bulunamadı.");
       return;
     }
 
     if (!("Notification" in window)) {
-      alert("Bu tarayıcı bildirim desteklemiyor.");
+      notify("Bu tarayıcı bildirim desteklemiyor.");
       return;
     }
 
     const permission = await Notification.requestPermission();
 
     if (permission !== "granted") {
-      alert("Bildirim izni verilmedi.");
+      notify("Bildirim izni verilmedi.");
       return;
     }
 
     const messaging = await getFirebaseMessaging();
 
     if (!messaging) {
-      alert("Bu cihazda bildirim desteklenmiyor.");
+      notify("Bu cihazda bildirim desteklenmiyor.");
       return;
     }
 
-    const registration = await navigator.serviceWorker.register("/firebase-messaging-sw.js");
+    // main.jsx ile aynı service worker; iki farklı dosya aynı kapsamda birbirini eziyordu
+    await navigator.serviceWorker.register("/sw.js");
+    const registration = await navigator.serviceWorker.ready;
 
     const token = await getToken(messaging, {
       vapidKey: import.meta.env.VITE_FIREBASE_VAPID_KEY,
@@ -55,7 +62,7 @@ export async function enableNotifications(user) {
     });
 
     if (!token) {
-      alert("Bildirim token'ı alınamadı.");
+      notify("Bildirim token'ı alınamadı.");
       return;
     }
 
@@ -86,10 +93,10 @@ export async function enableNotifications(user) {
 
     startForegroundNotifications();
 
-    alert("Bildirimler açıldı ve bu cihaz Firebase'e kaydedildi.");
+    notify("Bildirimler açıldı ve bu cihaz Firebase'e kaydedildi.");
   } catch (error) {
     console.error("Bildirim açma hatası:", error);
-    alert("Bildirim açılırken hata oluştu: " + error.message);
+    notify("Bildirim açılırken hata oluştu: " + error.message);
   }
 }
 
@@ -120,7 +127,7 @@ export async function startForegroundNotifications() {
       new Notification(title, {
         body,
         icon: "/icon-192.png",
-        badge: "/icon-192.png",
+        badge: "/badge-96.png",
       });
     });
   } catch (error) {
