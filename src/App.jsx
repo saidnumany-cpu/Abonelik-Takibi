@@ -65,11 +65,24 @@ function iconText(sub){
   return detectPlatform(sub.name)?.icon || sub.name.slice(0,2).toUpperCase();
 }
 
+// Görsel yüklenemezse sırayla: doğrudan adres → görsel proxy'si (hotlink engeli / http adresleri için) → harf ikonu
+function imageSources(url){
+  const clean = url.trim();
+  const https = clean.replace(/^http:\/\//i, "https://");
+  return [https, `https://wsrv.nl/?url=${encodeURIComponent(clean)}&w=128&h=128&fit=cover&output=png`];
+}
+
 function Logo({ sub, small=false }){
-  const image = isImageIcon(sub);
+  const url = isImageIcon(sub) ? sub.customIcon.trim() : "";
+  const [attempt,setAttempt] = useState(0);
+  useEffect(()=>{ setAttempt(0); },[url]);
+  const sources = url ? imageSources(url) : [];
+  const image = attempt < sources.length;
   return (
     <div className={`${small ? "logo smallLogo" : "logo"} ${image ? "imageLogo" : ""}`} style={image ? undefined : {background:sub.color,color:sub.color==="#f5f5f7"?"#111":"#fff"}}>
-      {image ? <img src={sub.customIcon.trim()} alt={sub.name} onError={(e)=>{ e.currentTarget.style.display = "none"; }}/> : <span>{iconText(sub)}</span>}
+      {image
+        ? <img key={sources[attempt]} src={sources[attempt]} alt={sub.name} referrerPolicy="no-referrer" loading="lazy" decoding="async" onError={()=>setAttempt(a=>a+1)}/>
+        : <span>{iconText(sub)}</span>}
     </div>
   );
 }
