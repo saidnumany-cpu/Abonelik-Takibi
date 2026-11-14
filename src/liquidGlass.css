@@ -1,0 +1,235 @@
+/* =========================================================
+   LIQUID GLASS
+   iOS 26 tarzı cam katmanı. styles.css'in üstüne biner;
+   <html class="lg"> kaldırılırsa eski görünüme döner.
+   ========================================================= */
+
+.lg{
+  --lg-blur:26px;
+  --lg-sat:185%;
+  --lg-fill:rgba(255,255,255,.055);
+  --lg-fill-strong:rgba(255,255,255,.09);
+  --lg-rim:rgba(255,255,255,.42);
+  --lg-rim-soft:rgba(255,255,255,.10);
+  --lg-ease:cubic-bezier(.2,.9,.25,1.25);
+}
+
+/* ---------- Arka plan: camın kıracağı canlı renkler ---------- */
+.lg body{
+  background:
+    radial-gradient(circle at 0% 45%,rgba(37,99,235,.38),transparent 30%),
+    radial-gradient(circle at 100% 22%,rgba(168,85,247,.32),transparent 32%),
+    radial-gradient(circle at 55% 105%,rgba(14,165,233,.22),transparent 34%),
+    linear-gradient(180deg,#080a13 0%,#05060c 45%,#020308 100%);
+  background-attachment:fixed;
+}
+.lg .ambient{opacity:.55;filter:blur(70px);will-change:transform}
+.lg .ambientOne{animation:lgDriftA 26s ease-in-out infinite alternate}
+.lg .ambientTwo{animation:lgDriftB 32s ease-in-out infinite alternate}
+.lg body::after{
+  content:"";position:fixed;z-index:-1;pointer-events:none;
+  width:300px;height:300px;left:42%;top:62%;border-radius:999px;
+  background:#ec4899;opacity:.22;filter:blur(90px);
+  animation:lgDriftC 38s ease-in-out infinite alternate;
+}
+@keyframes lgDriftA{to{transform:translate(160px,-120px) scale(1.15)}}
+@keyframes lgDriftB{to{transform:translate(-180px,160px) scale(.9)}}
+@keyframes lgDriftC{to{transform:translate(-260px,-220px) scale(1.2)}}
+
+/* ---------- Ortak cam yüzey ---------- */
+/* Büyük paneller ve üst çubuktaki hap düğmeler: gerçek arka plan bulanıklığı */
+.lg :is(.glassPanel,.syncBadge,.roundGhost,.loginButton,.toast){
+  position:relative;
+  isolation:isolate;
+  background:
+    radial-gradient(130% 90% at var(--lx,22%) var(--ly,-10%),rgba(255,255,255,.13),transparent 52%),
+    linear-gradient(180deg,rgba(255,255,255,.085) 0%,rgba(255,255,255,.025) 42%,rgba(255,255,255,.045) 100%),
+    var(--lg-fill);
+  border:1px solid var(--lg-rim-soft);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.30),
+    inset 0 -1px 0 rgba(255,255,255,.06),
+    inset 0 0 0 .5px rgba(255,255,255,.05),
+    inset 0 18px 36px -24px rgba(255,255,255,.22),
+    0 24px 70px -18px rgba(0,0,0,.55),
+    0 2px 6px rgba(0,0,0,.18);
+  -webkit-backdrop-filter:blur(var(--lg-blur)) saturate(var(--lg-sat)) brightness(1.06);
+  backdrop-filter:blur(var(--lg-blur)) saturate(var(--lg-sat)) brightness(1.06);
+}
+
+/* Kenar ışığı: sol üst ve sağ alt köşede parlayan ince cam kenar */
+.lg :is(.glassPanel,.syncBadge,.roundGhost,.loginButton,.toast,.primaryButton,.softButton,.fullGhost,.calArrow,.calToday)::before{
+  content:"";
+  position:absolute;inset:0;z-index:2;
+  border-radius:inherit;
+  padding:1px;
+  background:
+    linear-gradient(135deg,var(--lg-rim) 0%,rgba(255,255,255,.08) 28%,rgba(255,255,255,0) 50%,rgba(255,255,255,.06) 72%,rgba(255,255,255,.28) 100%);
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+  -webkit-mask-composite:xor;
+  mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+  mask-composite:exclude;
+  pointer-events:none;
+}
+
+/* Chromium: arka planı gerçekten büken kırılma filtresi */
+.lg.lg-refract :is(.glassPanel){
+  -webkit-backdrop-filter:url(#lg-refract) brightness(1.06);
+  backdrop-filter:url(#lg-refract) brightness(1.06);
+}
+.lg.lg-refract :is(.syncBadge,.roundGhost,.loginButton,.toast){
+  -webkit-backdrop-filter:url(#lg-refract-sm) brightness(1.08);
+  backdrop-filter:url(#lg-refract-sm) brightness(1.08);
+}
+
+/* ---------- Paneller ---------- */
+.lg .summaryCard,.lg .sideCard,.lg .contentCard,.lg .calendarCard{border-radius:28px}
+.lg .notice{border-radius:22px}
+.lg .contentHeader{border-bottom-color:rgba(255,255,255,.06)}
+
+/* ---------- Hap düğmeler (üst çubuk) ---------- */
+.lg :is(.roundGhost,.loginButton,.syncBadge){color:#fff}
+.lg :is(.roundGhost,.loginButton,.softButton,.fullGhost,.calArrow,.calToday,.iconAction,.miniGhost,.calEdit,.primaryButton){
+  transition:transform .35s var(--lg-ease),background-color .2s,box-shadow .25s,filter .2s;
+}
+.lg :is(.roundGhost,.loginButton,.softButton,.fullGhost,.calArrow,.calToday,.iconAction,.miniGhost,.calEdit,.primaryButton,.delete):active{
+  transform:scale(.94);
+}
+@media(hover:hover){
+  .lg :is(.roundGhost,.loginButton,.softButton,.fullGhost,.calArrow,.calToday,.iconAction,.miniGhost,.calEdit):hover{
+    filter:brightness(1.18);
+  }
+  .lg .primaryButton:hover{filter:brightness(1.1) saturate(1.1)}
+}
+.lg .profileChip{padding:2px}
+.lg .profileChip img{border-radius:999px}
+
+/* ---------- Panel içi cam düğmeler (iç içe bulanıklık yok: iPhone'da akıcı kalsın) ---------- */
+.lg :is(.softButton,.fullGhost,.calArrow,.calToday,.iconAction,.miniGhost,.calEdit){
+  position:relative;
+  background:
+    radial-gradient(120% 100% at var(--lx,30%) var(--ly,0%),rgba(255,255,255,.12),transparent 60%),
+    linear-gradient(180deg,rgba(255,255,255,.09),rgba(255,255,255,.03));
+  border:1px solid rgba(255,255,255,.07);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.22),
+    inset 0 -1px 0 rgba(255,255,255,.04),
+    0 8px 22px -12px rgba(0,0,0,.6);
+}
+
+/* Ana eylem: mavi tonlu cam */
+.lg .primaryButton{
+  position:relative;
+  background:
+    radial-gradient(120% 120% at var(--lx,30%) var(--ly,0%),rgba(255,255,255,.28),transparent 55%),
+    linear-gradient(180deg,rgba(80,140,255,.92),rgba(37,99,235,.86) 55%,rgba(29,78,216,.92));
+  border:1px solid rgba(147,197,253,.25);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.45),
+    inset 0 -2px 6px rgba(15,23,80,.35),
+    inset 0 10px 18px -10px rgba(255,255,255,.35),
+    0 14px 34px -10px rgba(37,99,235,.65);
+  text-shadow:0 1px 1px rgba(0,0,0,.18);
+}
+.lg .primaryButton::before{--lg-rim:rgba(255,255,255,.6)}
+
+/* Sil: kırmızı tonlu cam */
+.lg .delete{
+  background:linear-gradient(180deg,rgba(239,68,68,.20),rgba(239,68,68,.08));
+  border:1px solid rgba(248,113,113,.22);
+  box-shadow:inset 0 1px 0 rgba(255,200,200,.22),0 8px 22px -12px rgba(239,68,68,.5);
+  transition:transform .35s var(--lg-ease);
+}
+
+/* ---------- Giriş alanları: içe gömük cam ---------- */
+.lg :is(.searchBox,.filterBox),.lg .formGrid :is(input,select){
+  background:linear-gradient(180deg,rgba(0,0,0,.30),rgba(0,0,0,.16));
+  border:1px solid rgba(255,255,255,.07);
+  box-shadow:
+    inset 0 2px 6px rgba(0,0,0,.35),
+    inset 0 -1px 0 rgba(255,255,255,.07);
+  transition:border-color .2s,box-shadow .2s;
+}
+.lg :is(.searchBox,.filterBox):focus-within,.lg .formGrid :is(input,select):focus{
+  border-color:rgba(147,197,253,.45);
+  box-shadow:inset 0 2px 6px rgba(0,0,0,.35),0 0 0 4px rgba(59,130,246,.16);
+}
+.lg .formCard{
+  background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.015));
+  border:1px solid rgba(255,255,255,.08);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.18),inset 0 0 30px rgba(255,255,255,.025);
+  border-radius:22px;
+}
+
+/* ---------- Abonelik satırları ---------- */
+.lg .subRow{transition:background-color .25s}
+@media(hover:hover){
+  .lg .subRow:hover{
+    background:radial-gradient(60% 140% at var(--lx,50%) var(--ly,50%),rgba(255,255,255,.07),transparent 70%),rgba(255,255,255,.02);
+  }
+}
+@media(max-width:1180px){
+  .lg .subRow{
+    background:
+      radial-gradient(120% 100% at var(--lx,20%) var(--ly,0%),rgba(255,255,255,.08),transparent 55%),
+      linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.02));
+    border:1px solid rgba(255,255,255,.07);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 10px 26px -16px rgba(0,0,0,.7);
+    border-radius:20px;
+  }
+}
+
+/* Logo rozetleri: üstte hafif cam parlaması */
+.lg .logo:not(.imageLogo){position:relative;box-shadow:inset 0 1px 0 rgba(255,255,255,.4),inset 0 -6px 12px rgba(0,0,0,.18),0 10px 24px rgba(0,0,0,.28)}
+.lg .logo:not(.imageLogo)::after{
+  content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  background:linear-gradient(180deg,rgba(255,255,255,.28),rgba(255,255,255,0) 48%);
+}
+
+/* Durum rozetleri */
+.lg .status{box-shadow:inset 0 1px 0 rgba(255,255,255,.18),inset 0 0 0 1px rgba(134,239,172,.16)}
+.lg .status.warning{box-shadow:inset 0 1px 0 rgba(255,255,255,.18),inset 0 0 0 1px rgba(252,211,77,.18)}
+
+/* Kategori çubukları: cam tüp */
+.lg .categoryRow i{background:rgba(0,0,0,.28);box-shadow:inset 0 1px 3px rgba(0,0,0,.4),inset 0 -1px 0 rgba(255,255,255,.06)}
+.lg .categoryRow em{position:relative;box-shadow:0 0 14px rgba(124,58,237,.45)}
+.lg .categoryRow em::after{content:"";position:absolute;inset:1px 4px auto;height:40%;border-radius:999px;background:rgba(255,255,255,.35)}
+
+/* ---------- Takvim ---------- */
+.lg .calCell{
+  background-image:radial-gradient(120% 100% at var(--lx,30%) var(--ly,0%),rgba(255,255,255,.07),transparent 60%);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.08);
+  transition:border-color .15s,background-color .15s,transform .35s var(--lg-ease);
+}
+.lg .calCell:not(.calBlank):active{transform:scale(.95)}
+.lg .calCell.hasPay{box-shadow:inset 0 1px 0 rgba(255,255,255,.2)}
+.lg .calCell.isNext{box-shadow:inset 0 1px 0 rgba(255,255,255,.25),0 0 0 1px var(--pay),0 14px 34px -14px var(--pay)}
+.lg .calCell.isToday .calNum{box-shadow:0 0 0 3px rgba(255,255,255,.14),0 4px 14px rgba(255,255,255,.25)}
+.lg .calDetail{
+  background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.015));
+  border:1px solid rgba(255,255,255,.08);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.18);
+  border-radius:22px;
+}
+
+/* ---------- Bildirim baloncuğu ---------- */
+.lg .toast{position:fixed;background-color:rgba(20,26,44,.35)}
+
+/* ---------- Durum çubuğu şeridi ---------- */
+.lg body::before{
+  background:linear-gradient(180deg,rgba(5,6,12,.7),rgba(5,6,12,.35));
+  -webkit-backdrop-filter:blur(20px) saturate(180%);
+  backdrop-filter:blur(20px) saturate(180%);
+}
+
+/* ---------- Erişilebilirlik ---------- */
+@media(prefers-reduced-motion:reduce){
+  .lg .ambient,.lg body::after{animation:none}
+}
+/* "Saydamlığı azalt" açıksa: düz, okunaklı yüzeyler */
+@media(prefers-reduced-transparency:reduce){
+  .lg :is(.glassPanel,.syncBadge,.roundGhost,.loginButton,.toast){
+    background:#121624;
+    -webkit-backdrop-filter:none;backdrop-filter:none;
+  }
+}
