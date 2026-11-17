@@ -70,10 +70,10 @@ export default function Calendar({ subs, Logo, toTry, onEdit }) {
   const selectedTotal = selectedList.reduce((sum, s) => sum + toTry(s.price, s.currency), 0);
 
   return (
-    <section className="calendarCard glassPanel" aria-label="Ödeme takvimi">
+    <section className="calendarCard card" aria-label="Ödeme takvimi">
       <header className="calHeader">
         <div className="calTitle">
-          <CalendarDays size={20} />
+          <CalendarDays size={20} aria-hidden="true" />
           <h2>{MONTHS[view.month]} <span>{view.year}</span></h2>
         </div>
         <div className="calSummary">
@@ -82,8 +82,8 @@ export default function Calendar({ subs, Logo, toTry, onEdit }) {
         </div>
         <div className="calNav">
           {!isCurrentMonth && <button className="calToday" onClick={goToday}>Bugün</button>}
-          <button className="calArrow" onClick={() => goMonth(-1)} aria-label="Önceki ay"><ChevronLeft size={20} /></button>
-          <button className="calArrow" onClick={() => goMonth(1)} aria-label="Sonraki ay"><ChevronRight size={20} /></button>
+          <button className="calArrow" onClick={() => goMonth(-1)} aria-label="Önceki ay"><ChevronLeft size={20} aria-hidden="true" /></button>
+          <button className="calArrow" onClick={() => goMonth(1)} aria-label="Sonraki ay"><ChevronRight size={20} aria-hidden="true" /></button>
         </div>
       </header>
 
@@ -117,7 +117,7 @@ export default function Calendar({ subs, Logo, toTry, onEdit }) {
                   {list.length > 0 && (
                     <>
                       <span className="calLogos">
-                        {list.slice(0, 3).map((s) => <Logo key={s.id} sub={s} small />)}
+                        {list.slice(0, 3).map((s) => <Logo key={s.id} sub={s} size="xs" />)}
                         {list.length > 3 && <em>+{list.length - 3}</em>}
                       </span>
                       <span className="calDots">{list.slice(0, 4).map((s) => <i key={s.id} style={{ background: s.color }} />)}</span>
@@ -142,13 +142,13 @@ export default function Calendar({ subs, Logo, toTry, onEdit }) {
                   <ul className="calPayList">
                     {selectedList.map((s) => (
                       <li key={s.id}>
-                        <Logo sub={s} small />
+                        <Logo sub={s} size="sm" />
                         <div>
                           <strong>{s.name}</strong>
                           <span>{s.card && s.card !== "Belirtilmedi" ? s.card : s.category}</span>
                         </div>
                         <b>{s.currency === "TRY" ? exactTl(Number(s.price)) : `${s.price} ${s.currency}`}</b>
-                        <button className="calEdit" onClick={() => onEdit(s)} aria-label={`${s.name} düzenle`} title="Düzenle"><Edit3 size={15} /></button>
+                        <button className="calEdit" onClick={() => onEdit(s)} aria-label={`${s.name} düzenle`} title="Düzenle"><Edit3 size={16} aria-hidden="true" /></button>
                       </li>
                     ))}
                   </ul>
