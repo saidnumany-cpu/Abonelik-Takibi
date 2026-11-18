@@ -1,12 +1,13 @@
 /* =========================================================
    Abonelik Takip — tasarım sistemi
-   Stil: Dark Mode (OLED) + Minimal/Swiss · Yazı: Inter
+   Stil: Dark Mode (OLED) + Minimal/Swiss · Yazı: San Francisco (Apple sistem fontu; diğer sistemlerde Inter)
    Renkler semantik değişkenlerden gelir; bileşenlerde ham hex yok.
    ========================================================= */
 
 :root{
   color-scheme:dark;
-  --font:"Inter Variable",Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","Inter Variable",Inter,system-ui,"Segoe UI",Roboto,sans-serif;
+  --gutter:clamp(24px,2.6vw,48px);
 
   /* Yüzeyler */
   --bg:#07090e;
@@ -79,7 +80,7 @@
 /* ---------- Temel ---------- */
 *,*::before,*::after{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%;scroll-padding-top:calc(var(--topbar-h) + 16px)}
-body{margin:0;min-height:100dvh;background:var(--bg);color:var(--text);font-family:var(--font);font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased;font-feature-settings:"cv11","ss01"}
+body{margin:0;min-height:100dvh;background:var(--bg);color:var(--text);font-family:var(--font);font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
 h1,h2,h3,p{margin:0}
 button,input,select{font:inherit;color:inherit}
 button{cursor:pointer;background:none;border:0;padding:0}
@@ -99,13 +100,50 @@ main:focus{outline:none}
 /* ---------- İskelet ---------- */
 .app{min-height:100dvh}
 .topbar{position:sticky;top:0;z-index:20;padding-top:env(safe-area-inset-top);background:color-mix(in srgb,var(--bg) 86%,transparent);backdrop-filter:saturate(1.4) blur(14px);-webkit-backdrop-filter:saturate(1.4) blur(14px);border-bottom:1px solid var(--border)}
-.topbarInner{height:var(--topbar-h);max-width:1180px;margin:0 auto;padding:0 max(24px,env(safe-area-inset-right)) 0 max(24px,env(safe-area-inset-left));display:flex;align-items:center;gap:16px}
+.topbarInner{height:var(--topbar-h);max-width:2400px;margin:0 auto;padding:0 max(var(--gutter),env(safe-area-inset-right)) 0 max(var(--gutter),env(safe-area-inset-left));display:flex;align-items:center;gap:16px}
 .brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:17px;letter-spacing:-.02em;flex:1}
 .brand img{border-radius:9px}
 .topActions{display:flex;align-items:center;gap:8px;flex:1;justify-content:flex-end}
-.content{max-width:1180px;margin:0 auto;padding:28px max(24px,env(safe-area-inset-right)) 48px max(24px,env(safe-area-inset-left))}
+.content{max-width:2400px;margin:0 auto;padding:24px max(var(--gutter),env(safe-area-inset-right)) 32px max(var(--gutter),env(safe-area-inset-left))}
 .stack{display:grid;gap:20px}
 .split{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:20px;align-items:start}
+.cap{text-transform:capitalize}
+
+/* ---------- Geniş ekran: Özet ızgarası ---------- */
+.ozetPage{min-height:calc(100dvh - var(--topbar-h) - 56px);display:flex;flex-direction:column}
+.ozetPage>.overviewGrid{flex:1}
+.overviewGrid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr) minmax(300px,.85fr);gap:20px;align-items:stretch}
+.panel{display:flex;flex-direction:column}
+.panelFoot{margin-top:auto;display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:14px 12px 4px;border-top:1px solid var(--border);color:var(--text-2);font-size:14px}
+.panelFoot strong{color:var(--text);font-size:17px;font-weight:650}
+.sideCol{display:grid;grid-template-rows:auto 1fr;gap:20px;min-width:0}
+.statSub{font-size:13px;color:var(--text-3)}
+
+.flowTrack{position:relative;height:36px;margin:14px 8px 0}
+.flowTrack::before{content:"";position:absolute;left:0;right:0;top:50%;height:6px;margin-top:-3px;border-radius:99px;background:var(--surface-3)}
+.flowProgress{position:absolute;left:0;top:50%;height:6px;margin-top:-3px;border-radius:99px;background:var(--bar)}
+.flowTrack i{position:absolute;top:50%;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;background:var(--c);box-shadow:0 0 0 3px var(--surface)}
+.flowTrack i.isDone{opacity:.45}
+.flowTrack b{position:absolute;top:2px;bottom:2px;width:2px;margin-left:-1px;border-radius:2px;background:var(--text)}
+.flowScale{display:flex;justify-content:space-between;margin:4px 8px 0;font-size:12px;color:var(--text-3);font-weight:600}
+.flowStats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:16px 0 0}
+.flowStats div,.sideSummary div{padding:12px 14px;border-radius:var(--r-md);background:var(--surface-2);display:grid;gap:2px;min-width:0}
+.flowStats dt,.sideSummary dt{font-size:13px;color:var(--text-2)}
+.flowStats dd,.sideSummary dd{margin:0;font-size:17px;font-weight:650;letter-spacing:-.02em}
+.payMethods{display:grid}
+.payMethods>li+li .row{border-top:1px solid var(--border);border-top-left-radius:0;border-top-right-radius:0}
+.payMethods .row{min-height:56px;padding:10px 12px}
+.pmIcon{width:40px;height:40px;flex:0 0 auto;display:grid;place-items:center;border-radius:11px;background:var(--surface-2);color:var(--text-2)}
+
+/* ---------- Abonelikler: yan panel ---------- */
+.listLayout{display:grid;grid-template-columns:320px minmax(0,1fr);gap:20px;align-items:start}
+.listSide{position:sticky;top:calc(var(--topbar-h) + 24px);display:grid;gap:16px;padding:16px;border-radius:var(--r-lg);background:var(--surface);border:1px solid var(--border);box-shadow:var(--shadow)}
+.listSide .toolbar{grid-template-columns:1fr}
+.listSide .selectWrap .input{width:100%}
+.listSide .chips{flex-wrap:wrap;overflow:visible;margin:0;padding:0}
+.listSide .search{background:var(--surface-2)}
+.sideSummary{display:grid;gap:8px;margin:0;padding-top:16px;border-top:1px solid var(--border)}
+.listMain{display:grid;gap:16px;min-width:0}
 
 /* ---------- Sekmeler ---------- */
 .tabsTop{display:flex;gap:4px;padding:4px;border-radius:999px;background:var(--surface-2);border:1px solid var(--border)}
@@ -152,13 +190,14 @@ main:focus{outline:none}
 .cardHead h2{font-size:17px;font-weight:650;letter-spacing:-.015em}
 
 /* ---------- Özet (hero) ---------- */
-.hero{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:24px;align-items:center;padding:28px}
+.hero{display:grid;grid-template-columns:minmax(260px,1fr) minmax(0,2.4fr);gap:32px;align-items:center;padding:28px 32px}
 .eyebrow{font-size:13px;font-weight:600;color:var(--text-2);text-transform:uppercase;letter-spacing:.06em}
 .heroValue{margin-top:6px;display:flex;align-items:baseline;font-weight:700;letter-spacing:-.04em;line-height:1}
 .heroValue span{font-size:clamp(40px,6vw,56px)}
 .heroValue small{font-size:clamp(20px,2.6vw,26px);color:var(--text-2);font-weight:600;margin-left:2px}
 .heroSub{margin-top:10px;color:var(--text-2);font-size:15px}
-.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:0}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:0}
+.stat{min-height:104px}
 .stat{padding:16px;border-radius:var(--r-md);background:var(--surface-2);display:grid;gap:4px;align-content:start;min-width:0}
 .stat dt{font-size:13px;color:var(--text-2);font-weight:500}
 .stat dd{margin:0;font-size:19px;font-weight:650;letter-spacing:-.02em;overflow-wrap:anywhere}
@@ -320,11 +359,12 @@ input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-
 .calArrow:hover,.calToday:hover{background:var(--surface-3)}
 .calArrow{width:44px;display:grid;place-items:center}
 .calToday{padding:0 14px;font-weight:600;font-size:14px}
-.calBody{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:20px;align-items:start}
+.calBody{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:24px;align-items:start}
+.calDetail{position:sticky;top:calc(var(--topbar-h) + 24px)}
 .calWeekdays{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:6px}
 .calWeekdays span{padding:0 8px;color:var(--text-3);font-size:12px;font-weight:650;text-transform:uppercase;letter-spacing:.05em}
 .calGrid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
-.calCell{position:relative;min-height:96px;display:flex;flex-direction:column;align-items:flex-start;gap:6px;padding:8px;border-radius:var(--r-md);background:var(--surface-2);border:1px solid transparent;color:var(--text);text-align:left;transition:border-color var(--t-fast),background-color var(--t-fast)}
+.calCell{position:relative;min-height:clamp(96px,calc((100dvh - var(--topbar-h) - 250px) / 6),150px);display:flex;flex-direction:column;align-items:flex-start;gap:6px;padding:8px;border-radius:var(--r-md);background:var(--surface-2);border:1px solid transparent;color:var(--text);text-align:left;transition:border-color var(--t-fast),background-color var(--t-fast)}
 .calCell:hover{border-color:var(--border-strong)}
 .calBlank{background:transparent;pointer-events:none}
 .calNum{display:grid;place-items:center;min-width:28px;height:28px;border-radius:999px;font-size:14px;font-weight:600;color:var(--text-2);font-variant-numeric:tabular-nums}
@@ -356,13 +396,41 @@ input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-
 .calEdit:hover{background:var(--surface-3);color:var(--text)}
 .calDayTotal{display:flex;justify-content:space-between;align-items:baseline;margin-top:16px;padding-top:12px;border-top:1px solid var(--border);color:var(--text-2);font-size:14px}
 .calDayTotal strong{color:var(--text);font-size:16px;font-variant-numeric:tabular-nums}
+.calMonthList{margin-top:20px;padding-top:16px;border-top:1px solid var(--border)}
+.calMonthList h4{margin:0 0 8px;font-size:12px;font-weight:650;text-transform:uppercase;letter-spacing:.06em;color:var(--text-3)}
+.calMonthList ul{display:grid;gap:2px;max-height:calc(100dvh - var(--topbar-h) - 420px);min-height:160px;overflow-y:auto;margin:0 -8px;padding:0}
+.calMonthList button{width:100%;display:grid;grid-template-columns:28px 28px minmax(0,1fr) auto;align-items:center;gap:10px;min-height:44px;padding:6px 8px;border-radius:var(--r-sm);text-align:left;transition:background-color var(--t-fast)}
+.calMonthList button:hover{background:var(--surface-3)}
+.calMonthList button.isOn{background:var(--surface-3)}
+.calMlDay{font-size:13px;font-weight:650;color:var(--text-2);text-align:center}
+.calMlName{font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.calMonthList b{font-size:14px;font-weight:650}
 .calEmpty{margin:12px 0 0;color:var(--text-2);line-height:1.55}
 .calEmpty button{color:var(--link);font-weight:600;text-decoration:underline;text-underline-offset:3px}
 
 /* =========================================================
    Duyarlı düzen
    ========================================================= */
+@media (max-width:1399px){
+  .overviewGrid{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+  .sideCol{grid-column:1/-1;grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:auto}
+  .listLayout{grid-template-columns:280px minmax(0,1fr)}
+  .calBody{grid-template-columns:minmax(0,1fr) 320px}
+}
+
 @media (max-width:1023px){
+  .wideOnly{display:none!important}
+  .ozetPage{min-height:0}
+  .overviewGrid{grid-template-columns:1fr;align-items:start}
+  .listLayout{grid-template-columns:1fr}
+  .listSide{position:static;padding:0;background:none;border:0;box-shadow:none}
+  .listSide .toolbar{grid-template-columns:minmax(0,1fr) auto}
+  .listSide .chips{flex-wrap:nowrap;overflow-x:auto;margin:0 -4px;padding:2px 4px}
+  .listSide .search{background:var(--surface)}
+  .listSide .selectWrap .input{width:auto}
+  .calDetail{position:static}
+  .stats{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .stat{min-height:0}
   .split{grid-template-columns:1fr}
   .hero{grid-template-columns:1fr}
   .calBody{grid-template-columns:1fr}
@@ -384,9 +452,9 @@ input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-
   .stat{padding:12px 14px}
   .stat dd{font-size:17px}
   .pageTitle{font-size:24px}
-  .toolbar{grid-template-columns:1fr}
-  .selectWrap .input{width:100%}
-  .chips{margin:0 -16px;padding:2px 16px}
+  .toolbar,.listSide .toolbar{grid-template-columns:1fr}
+  .selectWrap .input,.listSide .selectWrap .input{width:100%}
+  .chips,.listSide .chips{margin:0 -16px;padding:2px 16px}
   .row{gap:12px;padding:10px}
   .rowLg{padding:12px 10px;flex-wrap:wrap}
   .rowLg .rowMain{flex-basis:calc(100% - 56px - 100px)}

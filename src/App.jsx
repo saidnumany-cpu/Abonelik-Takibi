@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence, MotionConfig } from "framer-motion";
 import {
   Plus, Search, Bell, Download, LayoutGrid, List, CalendarDays, LogIn, LogOut,
-  Cloud, CloudOff, Upload, Check, User, ChevronRight, MoreHorizontal, X, RefreshCw, Inbox
+  Cloud, CloudOff, Upload, Check, User, ChevronRight, MoreHorizontal, X, RefreshCw, Inbox, CreditCard
 } from "lucide-react";
 import { auth, db, googleProvider, firebaseReady } from "./firebase";
 import Calendar from "./Calendar.jsx";
@@ -157,13 +157,27 @@ export default function App(){
 
   const monthlyTotal=useMemo(()=>subs.reduce((sum,s)=>sum+monthlyCost(s),0),[subs]);
   const yearlyTotal=monthlyTotal*12;
-  const upcoming=useMemo(()=>[...subs].sort((a,b)=>daysOf(a)-daysOf(b)).slice(0,5),[subs,daysMap]);
+  const upcoming=useMemo(()=>[...subs].sort((a,b)=>daysOf(a)-daysOf(b)).slice(0,6),[subs,daysMap]);
   const categoryTotals=useMemo(()=>{ const map={}; subs.forEach(s=>{ map[s.category]=(map[s.category]||0)+monthlyCost(s); }); return Object.entries(map).sort((a,b)=>b[1]-a[1]); },[subs]);
   const maxCat=Math.max(...categoryTotals.map(([,v])=>v),1);
   const dueSoon=useMemo(()=>subs.filter(s=>daysOf(s)<=7),[subs,daysMap]);
   const dueSoonTotal=dueSoon.reduce((sum,s)=>sum+toTry(s.price,s.currency),0);
   // Bu ay: tüm aylıklar + ödeme ayı bu ay olan yıllıklar
   const thisMonthTotal=useMemo(()=>{ const m=new Date().getMonth()+1; return subs.reduce((sum,s)=>sum+(s.cycle==="yearly"?(Number(s.paymentMonth)===m?toTry(s.price,s.currency):0):toTry(s.price,s.currency)),0); },[subs]);
+
+  // Bu ayın ödeme akışı: ödenen / kalan
+  const flow=useMemo(()=>{
+    const now=new Date(); const m=now.getMonth()+1; const today=now.getDate();
+    const dim=new Date(now.getFullYear(), m, 0).getDate();
+    const items=subs.filter(s=>s.cycle!=="yearly"||Number(s.paymentMonth)===m)
+      .map(s=>({ s, day:Math.min(Math.max(Number(s.paymentDay||1),1),28), amount:toTry(s.price,s.currency) }))
+      .sort((a,b)=>a.day-b.day);
+    const done=items.filter(i=>i.day<today);
+    return { items, today, dim, monthName:now.toLocaleDateString("tr-TR",{month:"long"}).replace(/^./,c=>c.toLocaleUpperCase("tr")),
+      doneCount:done.length, paid:done.reduce((t,i)=>t+i.amount,0), left:items.filter(i=>i.day>=today).reduce((t,i)=>t+i.amount,0) };
+  },[subs]);
+  const cardTotals=useMemo(()=>{ const map={}; subs.forEach(s=>{ const k=s.card||"Belirtilmedi"; (map[k] ||= { total:0, count:0 }); map[k].total+=monthlyCost(s); map[k].count++; }); return Object.entries(map).sort((a,b)=>b[1].total-a[1].total); },[subs]);
+  const filteredMonthly=useMemo(()=>filtered.reduce((t,s)=>t+monthlyCost(s),0),[filtered]);
 
   function download(blob,name){ const url=URL.createObjectURL(blob); const a=document.createElement("a"); a.href=url; a.download=name; a.click(); URL.revokeObjectURL(url); }
   function exportCsv(){
@@ -199,7 +213,7 @@ export default function App(){
   /* ---------- Görünümler ---------- */
 
   const overview = (
-    <div className="stack">
+    <div className="stack ozetPage">
       <section className="hero card" aria-labelledby="hero-label">
         <div className="heroMain">
           <span className="eyebrow" id="hero-label">Aylık toplam</span>
@@ -210,6 +224,7 @@ export default function App(){
           <div className="stat"><dt>Bu ay ödenecek</dt><dd className="num">{money(thisMonthTotal)}</dd></div>
           <div className="stat"><dt>7 gün içinde</dt><dd className="num">{dueSoon.length} ödeme</dd>{dueSoon.length>0 && <span className="statNote num">{money(dueSoonTotal)}</span>}</div>
           <div className="stat"><dt>Yıllık toplam</dt><dd className="num">{money(yearlyTotal)}</dd></div>
+          <div className="stat wideOnly"><dt>Abonelik başına</dt><dd className="num">{money(subs.length ? monthlyTotal/subs.length : 0)}</dd><span className="statSub">aylık ortalama</span></div>
         </dl>
       </section>
 
@@ -222,14 +237,14 @@ export default function App(){
       )}
 
       {!subs.length ? <EmptyStart onAdd={openNew}/> : (
-        <div className="split">
-          <section className="card" aria-labelledby="up-title">
+        <div className="overviewGrid">
+          <section className="card panel" aria-labelledby="up-title">
             <header className="cardHead"><h2 id="up-title">Sıradaki ödemeler</h2>
               <button className="btn btnLink" onClick={()=>{ clearFilters(); setView("abonelikler"); }}>Tümü <ChevronRight size={16} aria-hidden="true"/></button>
             </header>
             <ul className="rows">
-              {upcoming.map(s => (
-                <li key={s.id}>
+              {upcoming.map((s,i) => (
+                <li key={s.id} className={i>=5 ? "wideOnly" : undefined}>
                   <button className="row" onClick={()=>openEdit(s)}>
                     <Logo sub={s}/>
                     <span className="rowMain"><strong>{s.name}</strong><span>{shortDate(s)}</span></span>
@@ -238,9 +253,10 @@ export default function App(){
                 </li>
               ))}
             </ul>
+            <footer className="panelFoot wideOnly"><span>{flow.monthName} ayında kalan</span><strong className="num">{money(flow.left)}</strong></footer>
           </section>
 
-          <section className="card" aria-labelledby="cat-title">
+          <section className="card panel" aria-labelledby="cat-title">
             <header className="cardHead"><h2 id="cat-title">Kategoriler</h2><span className="muted">aylık</span></header>
             <ul className="bars">
               {categoryTotals.map(([c,v]) => (
@@ -253,7 +269,41 @@ export default function App(){
                 </li>
               ))}
             </ul>
+            <footer className="panelFoot wideOnly"><span>{categoryTotals.length} kategori · aylık</span><strong className="num">{money(monthlyTotal)}</strong></footer>
           </section>
+
+          <div className="sideCol wideOnly">
+            <section className="card" aria-labelledby="flow-title">
+              <header className="cardHead"><h2 id="flow-title" >{flow.monthName} akışı</h2><span className="muted">{flow.doneCount}/{flow.items.length} ödendi</span></header>
+              <div className="flowTrack" role="img" aria-label={`Ayın ${flow.today}. günü; ${flow.items.length} ödemenin ${flow.doneCount} tanesi geçti`}>
+                <span className="flowProgress" style={{width:`${(flow.today-1)/(flow.dim-1)*100}%`}}/>
+                {flow.items.map(({s,day}) => (
+                  <i key={s.id} className={day<flow.today ? "isDone" : undefined} style={{left:`${(day-1)/(flow.dim-1)*100}%`, "--c":s.color}} title={`${day} · ${s.name}`}/>
+                ))}
+                <b style={{left:`${(flow.today-1)/(flow.dim-1)*100}%`}}/>
+              </div>
+              <div className="flowScale num"><span>1</span><span>Bugün · {flow.today}</span><span>{flow.dim}</span></div>
+              <dl className="flowStats">
+                <div><dt>Ödenen</dt><dd className="num">{money(flow.paid)}</dd></div>
+                <div><dt>Kalan</dt><dd className="num">{money(flow.left)}</dd></div>
+              </dl>
+            </section>
+
+            <section className="card panel" aria-labelledby="card-title">
+              <header className="cardHead"><h2 id="card-title">Ödeme yöntemleri</h2><span className="muted">aylık</span></header>
+              <ul className="payMethods">
+                {cardTotals.map(([c,{total,count}]) => (
+                  <li key={c}>
+                    <button className="row" onClick={()=>{ clearFilters(); setCardFilter(c); setView("abonelikler"); }}>
+                      <span className="pmIcon" aria-hidden="true"><CreditCard size={18}/></span>
+                      <span className="rowMain"><strong>{c}</strong><span>{count} abonelik</span></span>
+                      <span className="rowEnd"><strong className="num">{money(total)}</strong></span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          </div>
         </div>
       )}
     </div>
@@ -266,7 +316,9 @@ export default function App(){
         <button className="btn btnPrimary hideMobile" onClick={openNew}><Plus size={18} aria-hidden="true"/> Abonelik ekle</button>
       </header>
 
+      <div className={subs.length ? "listLayout" : undefined}>
       {subs.length>0 && (
+        <aside className="listSide">
         <div className="toolbar">
           <label className="search">
             <Search size={18} aria-hidden="true"/>
@@ -289,8 +341,15 @@ export default function App(){
             ))}
           </div>
         </div>
+          <dl className="sideSummary wideOnly">
+            <div><dt>Gösterilen</dt><dd className="num">{filtered.length} / {subs.length}</dd></div>
+            <div><dt>Aylık tutar</dt><dd className="num">{money(filteredMonthly)}</dd></div>
+            <div><dt>Yıllık tutar</dt><dd className="num">{money(filteredMonthly*12)}</dd></div>
+          </dl>
+        </aside>
       )}
 
+      <div className="listMain">
       {!subs.length ? <EmptyStart onAdd={openNew}/> : filtered.length ? (
         <section className="card cardFlush" aria-label="Abonelik listesi">
           <ul className="rows">
@@ -323,6 +382,8 @@ export default function App(){
         </div>
       )}
       {filtersActive && filtered.length>0 && <p className="muted center">{filtered.length} sonuç · <button className="btn btnLink inline" onClick={clearFilters}>filtreleri temizle</button></p>}
+      </div>
+      </div>
     </div>
   );
 

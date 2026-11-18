@@ -164,6 +164,23 @@ export default function Calendar({ subs, Logo, toTry, onEdit }) {
           ) : (
             <p className="calEmpty">Ödemeleri görmek için takvimden bir gün seç.</p>
           )}
+          {paymentCount > 0 && (
+            <div className="calMonthList wideOnly">
+              <h4>Ayın tüm ödemeleri</h4>
+              <ul>
+                {Object.keys(byDay).map(Number).sort((x, y) => x - y).flatMap((d) => byDay[d].map((s) => (
+                  <li key={`${d}-${s.id}`}>
+                    <button className={d === selected ? "isOn" : undefined} onClick={() => setSelected(d)}>
+                      <span className="calMlDay num">{d}</span>
+                      <Logo sub={s} size="xs" />
+                      <span className="calMlName">{s.name}</span>
+                      <b className="num">{s.currency === "TRY" ? exactTl(Number(s.price)) : `${s.price} ${s.currency}`}</b>
+                    </button>
+                  </li>
+                )))}
+              </ul>
+            </div>
+          )}
         </aside>
       </div>
     </section>
